@@ -410,12 +410,13 @@
     var tb = document.getElementById('my-body');
     tb.innerHTML = skeletonRows(4, 7);
     API.fetchApprovals('my').then(function (res) {
-      document.getElementById('my-count').textContent = res.list.length;
-      if (res.list.length === 0) {
+      var cache = res.list;
+      document.getElementById('my-count').textContent = cache.length;
+      if (cache.length === 0) {
         tb.innerHTML = '<tr><td colspan="7"><div class="empty">暂无审批记录</div></td></tr>';
         return;
       }
-      tb.innerHTML = res.list.map(function (a) {
+      tb.innerHTML = cache.map(function (a) {
         return '<tr style="cursor:pointer" data-id="' + esc(a.id) + '">' +
           '<td class="num">' + esc(a.id) + '</td>' +
           '<td>' + esc(a.type) + '</td>' +
@@ -429,7 +430,7 @@
       Array.prototype.forEach.call(tb.querySelectorAll('[data-id]'), function (tr) {
         tr.addEventListener('click', function () {
           var found = null;
-          DB.approvals.forEach(function (x) { if (x.id === tr.getAttribute('data-id')) found = x; });
+          cache.forEach(function (x) { if (x.id === tr.getAttribute('data-id')) found = x; });
           if (found) openDetail(found);
         });
       });
