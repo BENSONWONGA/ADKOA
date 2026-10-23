@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OA 协作系统产品需求文档（PRD）</title>
+<style>
+  :root{
+    --primary:#1f4fd8;
+    --primary-dark:#173aa8;
+    --accent:#f59e0b;
+    --danger:#dc2626;
+    --success:#16a34a;
+    --ink:#1a2233;
+    --ink-2:#5b6472;
+    --line:#e5e8ef;
+    --bg:#f5f6fa;
+    --card:#ffffff;
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    font-size:15px;line-height:1.75;background:var(--bg);
+  }
+  a{color:var(--primary);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* 側边目录 */
+  .toc{
+    position:fixed;top:0;left:0;bottom:0;width:264px;background:#10172b;color:#c9d3e8;
+    padding:28px 18px;overflow-y:auto;z-index:10;
+  }
+  .toc h1{font-size:16px;color:#fff;margin:0 0 4px;line-height:1.4}
+  .toc .tag{font-size:12px;color:#7d8db3;margin-bottom:18px}
+  .toc a{display:block;color:#aebad6;font-size:13px;padding:6px 10px;border-radius:6px;margin:1px 0}
+  .toc a:hover{background:rgba(255,255,255,.08);color:#fff;text-decoration:none}
+  .toc .lvl2{padding-left:24px;font-size:12px}
+
+  main{margin-left:264px;padding:0 40px 80px;max-width:1080px}
+  .hero{
+    padding:44px 0 30px;border-bottom:1px solid var(--line);margin-bottom:8px;
+  }
+  .hero h1{font-size:30px;margin:0 0 10px;letter-spacing:.5px}
+  .hero .meta{color:var(--ink-2);font-size:13px;display:flex;gap:16px;flex-wrap:wrap}
+  section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:30px 34px;margin-top:22px}
+  h2{font-size:21px;margin:0 0 18px;padding-bottom:10px;border-bottom:2px solid var(--line);display:flex;align-items:center;gap:10px}
+  h2 .sec-no{background:var(--primary);color:#fff;font-size:12px;padding:2px 8px;border-radius:6px}
+  h3{font-size:17px;margin:26px 0 10px}
+  h4{font-size:15px;margin:18px 0 8px}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0;padding-left:22px}
+  li{margin:4px 0}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#eef1f8;font-weight:600;white-space:nowrap}
+  tr:nth-child(even) td{background:#fafbfe}
+  code{font-family:var(--mono);background:#eef1f8;padding:1px 6px;border-radius:4px;font-size:12.5px;color:var(--primary-dark)}
+  .badge{display:inline-block;font-size:12px;padding:1px 8px;border-radius:20px;margin-right:6px}
+  .b-id{background:#e7edfe;color:var(--primary-dark)}
+  .b-p0{background:#fef3e2;color:#b45309}
+  .b-p1{background:#e8f7ee;color:#166534}
+  .b-warn{background:#fee2e2;color:#991b1b}
+  .note{border-left:4px solid var(--accent);background:#fffbeb;padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0;font-size:14px}
+  .assume{border-left:4px solid var(--primary);background:#f2f6ff;padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0;font-size:14px}
+  .callout{display:inline-block;font-size:12px;background:#eef2ff;color:var(--primary-dark);border:1px solid #c7d2fe;border-radius:6px;padding:0 8px;margin-left:8px}
+
+  /* Demo 卡片 */
+  .demo{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:16px 0}
+  .demo>header{background:#f0f3fb;padding:8px 14px;font-size:13px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .demo>header .dir{font-weight:400;color:var(--ink-2);font-size:12px}
+  .demo .body{padding:16px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  button.btn{
+    border:1px solid var(--line);background:#fff;color:var(--ink);padding:6px 14px;border-radius:8px;
+    font-size:13px;cursor:pointer;font-family:inherit;
+  }
+  button.btn:hover{border-color:var(--primary);color:var(--primary)}
+  button.btn:disabled{opacity:.45;cursor:not-allowed}
+  button.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  button.btn.primary:hover{background:var(--primary-dark)}
+  button.btn.ok{background:var(--success);border-color:var(--success);color:#fff}
+  button.btn.no{background:#fff;border-color:var(--danger);color:var(--danger)}
+  button.btn.sm{padding:4px 10px;font-size:12px}
+  input,select{
+    border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;font-family:inherit;background:#fff;color:var(--ink);
+  }
+  input:focus,select:focus{outline:none;border-color:var(--primary)}
+  .steps{display:flex;gap:6px;margin:12px 0;flex-wrap:wrap}
+  .step{font-size:12px;padding:3px 10px;border-radius:20px;background:#eef1f8;color:var(--ink-2)}
+  .step.on{background:var(--primary);color:#fff}
+  .step.done{background:#e8f7ee;color:var(--success)}
+  .step.fail{background:#fee2e2;color:var(--danger)}
+  .log{font-size:12.5px;color:var(--ink-2);border-top:1px dashed var(--line);margin-top:12px;padding-top:8px}
+  .log div{margin:2px 0}
+  .state-line{font-size:13px;margin:8px 0}
+  .state-line b{color:var(--primary-dark)}
+  .chip{display:inline-block;font-size:12px;padding:1px 8px;border-radius:6px;margin-left:6px}
+  .chip.pending{background:#fef3e2;color:#b45309}
+  .chip.ok{background:#e8f7ee;color:#166534}
+  .chip.normal{background:#eef1f8;color:var(--ink-2)}
+  .state-node{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+  .actor{font-size:12.5px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink-2)}
+  .actor.cur{border-color:var(--primary);color:var(--primary);background:#eef3ff;font-weight:600}
+  .actor.busy{opacity:.5}
+  .arrow{color:#c3cad8;font-size:13px}
+  .timeline{font-size:12.5px;border-left:2px solid var(--line);padding-left:14px;margin:10px 0}
+  .timeline div{position:relative;margin:6px 0;color:var(--ink-2)}
+  .timeline div::before{content:"";position:absolute;left:-19px;top:8px;width:8px;height:8px;border-radius:50%;background:var(--line)}
+  .timeline div.ok::before{background:var(--success)}
+  .timeline div.now{color:var(--ink);font-weight:600}
+  .list-item{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:6px 0;font-size:13.5px;background:#fff}
+  .list-item .pri{font-size:11px;padding:1px 8px;border-radius:6px;color:#fff}
+  .pri.high{background:var(--danger)}.pri.mid{background:var(--accent)}.pri.low{background:#64748b}
+  .list-item.done-item{opacity:.6}
+  .list-item.done-item .t{text-decoration:line-through}
+  .muted{color:var(--ink-2)}
+  .empty{border:1px dashed var(--line);border-radius:8px;text-align:center;padding:14px;color:#9aa3b2;font-size:13px;margin:6px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:980px){.grid2{grid-template-columns:1fr}.toc{display:none}main{margin-left:0;padding:0 18px 60px}}
+</style>
+</head>
+<body>
+
+<aside class="toc">
+  <h1>OA 协作系统 PRD</h1>
+  <div class="tag">版本 v0.1 · 评审稿</div>
+  <a href="#bg">1. 背景与目标</a>
+  <a href="#scope">2. 适用范围</a>
+  <a href="#model">3. 角色与产品模型</a>
+  <a href="#functions">4. 功能需求</a>
+  <a class="lvl2" href="#fr01">4.1 审批流</a>
+  <a class="lvl2" href="#fr02">4.2 考勤打卡</a>
+  <a class="lvl2" href="#fr03">4.3 日程与会议</a>
+  <a class="lvl2" href="#fr04">4.4 任务与协作</a>
+  <a class="lvl2" href="#fr05">4.5 公告与知识库</a>
+  <a class="lvl2" href="#fr06">4.6 通讯录与组织</a>
+  <a href="#shared">5. 共享规则</a>
+  <a href="#open">6. 开放问题</a>
+</aside>
+
+<main>
+  <header class="hero">
+    <h1>OA 协作系统 产品需求文档</h1>
+    <div class="meta"><span>版本：v0.1（评审稿）</span><span>状态：待评审</span><span>覆盖模块：审批流 · 考勤 · 日程会议 · 任务协作 · 公告知识库 · 通讯录</span></div>
+  </header>
+
+  <!-- ============ 1 背景与目标 ============ -->
+  <section id="bg">
+    <h2><span class="sec-no">1</span>背景与目标</h2>
+    <p><b>观察到的现状</b>：企业日常办公分散在多个工具中——审批靠纸质表单或 IM 口头流转、考勤用独立打卡机、会议与任务无统一归口、制度公告靠群消息扩散。由此产生三类明确问题：</p>
+    <ul>
+      <li>流程无留痕：审批经过谁、何时处理、基于什么意见，事后难以追溯。</li>
+      <li>结果难协同：请假审批结果不自动回写考勤/假期额度，报销进度靠人工询问。</li>
+      <li>信息不集中：会议冲突、任务逾期、公告已读情况都缺乏统一视图。</li>
+    </ul>
+    <p><b>产品决策</b>：建设一套面向全员的一体化 OA 协作系统，把「申请—审批—执行—归档」串成闭环。</p>
+    <p><b>期望的可观察结果</b>：</p>
+    <ul>
+      <li>员工在一个系统内完成请假、报销、用章等申请，全程可查看进度与终态结果。</li>
+      <li>请假通过后假期额度自动扣减，异常考勤与补卡申请在同一处可见。</li>
+      <li>会议预定冲突提前提示，任务到期有提醒，公告已读可统计。</li>
+      <li>组织与通讯录集中维护，全员按权限检索。</li>
+    </ul>
+  </section>
+
+  <!-- ============ 2 适用范围 ============ -->
+  <section id="scope">
+    <h2><span class="sec-no">2</span>适用范围</h2>
+    <p><b>入口条件</b>：员工登录系统后即可发起任一核心动作（提交审批、打卡、查看待办）。</p>
+    <p><b>P0 最小完整旅程（以请假为例）</b>：</p>
+    <ol>
+      <li>员工填写并提交请假申请；</li>
+      <li>直接上级审批，同意后流转至 HR 复核；</li>
+      <li>HR 复核通过，审批单置为「已通过」，假期额度自动扣减；</li>
+      <li>员工收到结果通知，可在「我的申请」中查看全链路记录。</li>
+    </ol>
+    <p><b>完成证据</b>：审批单到达终态且员工收到通知；考勤月报正常无未处理异常；会议预定成功且无时间冲突；任务按期关闭。</p>
+    <p><b>主要恢复路径</b>：审批被驳回后，员工在原单上修改并重新提交，已填写内容保留；已提交未终态的申请允许撤销。</p>
+    <p><b>P1 支撑能力</b>：考勤补卡申请、会议室取消与变更、任务延期申请、公告定时发布与过期下线。</p>
+    <p><b>边界说明</b>以下内容不在此产品范围内，避免范围分歧：</p>
+    <ul>
+      <li>不包含薪酬计算与发放，考勤结果仅作数据呈现与导出，不直接驱动薪资 [Assumption, TBD]；</li>
+      <li>不包含 HR 入转调离等全流程管理，仅保留假期额度等与审批联动的部分；</li>
+      <li>不提供企业 IM（即时通讯），通知推送依赖站内信与第三方消息通道。</li>
+    </ul>
+  </section>
+
+  <!-- ============ 3 角色与产品模型 ============ -->
+  <section id="model">
+    <h2><span class="sec-no">3</span>角色与产品模型</h2>
+    <h3>3.1 角色定义</h3>
+    <table>
+      <tr><th>角色</th><th>职责说明</th></tr>
+      <tr><td>员工</td><td>提交审批、上下班打卡、维护个人日程与任务、查阅公告知识库与通讯录。</td></tr>
+      <tr><td>部门主管</td><td>一级审批人，审批本部门成员的申请；可查看本部门考勤与任务概况。</td></tr>
+      <tr><td>复核人</td><td>按审批类型指定的复核角色，如 HR 复核假期、财务复核报销 [Assumption, TBD]。</td></tr>
+      <tr><td>考勤管理员</td><td>维护班次规则、处理补卡申请复核、核对考勤异常数据。</td></tr>
+      <tr><td>系统管理员</td><td>维护组织架构、通讯录、权限、审批模板与公告；查看全量审计日志。</td></tr>
+    </table>
+    <h3>3.2 核心业务对象</h3>
+    <table>
+      <tr><th>对象</th><th>关键属性</th></tr>
+      <tr><td>审批单</td><td>类型（请假/报销/用章/采购/其他）、表单内容、审批链、当前节点、状态</td></tr>
+      <tr><td>打卡记录</td><td>人员、日期、打卡时间、方式（定位/Wi-Fi/外勤[Assumption, TBD]）、判定结果</td></tr>
+      <tr><td>班次规则</td><td>名称、上下班时间、打卡窗口、默认适用范围</td></tr>
+      <tr><td>假期额度</td><td>人员、假期类型、总额度/已用/剩余</td></tr>
+      <tr><td>日程 / 会议 / 会议室</td><td>时间、参与人、地点/资源、状态</td></tr>
+      <tr><td>任务 / 项目</td><td>标题、负责人、优先级、截止时间、状态、所属项目</td></tr>
+      <tr><td>公告 / 知识库节点</td><td>标题、正文、可见范围、发布与过期时间、已读记录</td></tr>
+      <tr><td>组织 / 成员</td><td>部门层级、岗位、直属上级、联系方式、可见范围</td></tr>
+    </table>
+    <h3>3.3 统一状态定义（全局通用）</h3>
+    <table>
+      <tr><th>状态组</th><th>取值</th></tr>
+      <tr><td>审批单</td><td>草稿 → 审批中 → 已通过 / 已驳回 → 已撤销</td></tr>
+      <tr><td>打卡结果</td><td>正常 / 迟到 / 早退 / 缺卡 / 外勤[Assumption, TBD]</td></tr>
+      <tr><td>任务</td><td>待办 → 进行中 → 已完成；超过截止时间未完成记为「逾期」</td></tr>
+      <tr><td>会议</td><td>待开始 → 进行中 → 已结束 / 已取消</td></tr>
+      <tr><td>公告</td><td>草稿 → 已发布 → 已下线</td></tr>
+    </table>
+  </section>
+
+  <!-- ============ 4 功能需求 ============ -->
+  <section id="functions">
+    <h2><span class="sec-no">4</span>功能需求</h2>
+    <p class="muted">功能需求是本文档主体。交互性强的模块（审批、考勤、任务、会议）均附可点击演示，演示中的状态与文案与需求文本保持一致。</p>
+
+    <!-- 4.1 审批流 -->
+    <h3 id="fr01">4.1 审批流 <span class="badge b-id">FR-01</span><span class="badge b-p0">P0</span></h3>
+    <p><b>目的</b>：让请假、报销、用章、采购等申请在统一流程中流转，过程留痕、结果可查、与考勤额度联动。</p>
+
+    <h4>FR-01.1 提交审批申请</h4>
+    <ul>
+      <li><b>触发</b>：员工在「发起申请」中选择审批类型并填写表单。</li>
+      <li><b>处理规则</b>：
+        <ul>
+          <li>表单按类型定制：请假（假期类型、起止时间、时长、事由、附件）、报销（费用明细、金额、发票附件、归属部门/项目[Assumption, TBD]）、用章/采购使用通用字段（标题、事由、附件）。</li>
+          <li>必填校验：请假必须选择起止时间且结束不早于开始；报销必须上传发票附件且金额&gt;0。</li>
+          <li>请假时长按自然日折算，跨天自动累加，结果保留 1 位小数 [Assumption, TBD]。</li>
+        </ul>
+      </li>
+      <li><b>结果</b>：生成审批单（状态「审批中」），通知一级审批人；提交人可在「我的申请」查看进度。</li>
+    </ul>
+
+    <h4>FR-01.2 审批处理</h4>
+    <ul>
+      <li><b>触发</b>：当前节点审批人（一级=直接上级；二级=类型复核人）处理待办。</li>
+      <li><b>处理规则</b>：
+        <ul>
+          <li>动作：同意、驳回（必填理由）、转办（转给他人处理 [Assumption, TBD]、加签（追加审批人 [Assumption, TBD]。</li>
+          <li>一级同意后流转至复核环节；复核同意后终态「已通过」。</li>
+          <li>任一级驳回即终态「已驳回」，停止后续流转。</li>
+          <li>若审批人缺失（如部门无主管），提交时提示并由系统管理员在 48 小时内配置 [Assumption, TBD]。</li>
+        </ul>
+      </li>
+      <li><b>结果与状态变更</b>：
+        <ul>
+          <li>同意/驳回均写入审批意见与时间，形成操作留痕；</li>
+          <li>终态结果实时通知提交人。</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h4>FR-01.3 撤销与修改重提</h4>
+    <ul>
+      <li>已提交但未到达终态的申请，提交人可「撤销」，状态置为「已撤销」并通知当前审批人。</li>
+      <li>被驳回的申请，提交人可「修改重提」：原表单内容完整保留，仅重新提交后状态回到「审批中」并重新通知一级审批人。</li>
+    </ul>
+
+    <h4>FR-01.4 请假与假期额度联动</h4>
+    <ul>
+      <li>审批单「已通过」且类型为请假时，自动扣减对应假期类型的剩余额度（已用=已用+请假时长）。</li>
+      <li>扣减失败（如剩余额度不足）时：提交环节即阻断。请假时长 &gt; 剩余额度时不允许提交，并提示当前剩余值。</li>
+      <li>「已驳回」或「已撤销」的单据不产生扣减；已扣减后若因流程异常回滚，需由系统管理员人工核对调整 [Assumption, TBD]。</li>
+    </ul>
+
+    <h4>审批单状态流转</h4>
+    <table>
+      <tr><th>当前状态</th><th>允许动作</th><th>动作后状态</th><th>操作人</th></tr>
+      <tr><td>草稿</td><td>提交 / 删除</td><td>审批中 / 删除</td><td>提交人</td></tr>
+      <tr><td>审批中（一级）</td><td>同意 / 驳回 / 转办 / 加签</td><td>审批中（复核）/ 已驳回 / 审批中（他人）</td><td>直接上级</td></tr>
+      <tr><td>审批中（复核）</td><td>同意 / 驳回</td><td>已通过 / 已驳回</td><td>复核人</td></tr>
+      <tr><td>审批中（任意节点）</td><td>撤销</td><td>已撤销</td><td>提交人</td></tr>
+      <tr><td>已驳回</td><td>修改重提 / 放弃</td><td>审批中（一级）/ 关闭</td><td>提交人</td></tr>
+    </table>
+
+    <h4>权限（详见 §5.1 权限矩阵）</h4>
+    <ul>
+      <li>提交人：仅见、仅操作自己提交的单据。</li>
+      <li>部门主管：仅见、仅处理本部门成员的单据。</li>
+      <li>复核人：仅见分配给自己的复核单据。</li>
+      <li>系统管理员：可见全部单据与操作日志。</li>
+    </ul>
+
+    <div class="demo">
+      <header>审批流演示（请假）<span class="dir">点击按钮体验 请假→直接上级→HR核实→终态</span></header>
+      <div class="body">
+        <div class="steps" id="ap-steps">
+          <span class="step on" data-step="submit">提交申请</span>
+          <span class="step" data-step="mgr">直接上级</span>
+          <span class="step" data-step="hr">HR 复核</span>
+          <span class="step" data-step="done">结果</span>
+        </div>
+        <div class="state-line" id="ap-state">当前节点：<b>一级审批（直接上级）</b></div>
+        <div class="muted" style="font-size:13px">请假单：事假 · 2026-11-02 ~ 2026-11-03（2 天）· 事由：家中有事</div>
+        <div class="row" id="ap-ops">
+          <button class="btn no" data-act="reject-mgr">驳回</button>
+          <button class="btn ok" data-act="approve-mgr">同意</button>
+        </div>
+        <div class="log" id="ap-log"></div>
+      </div>
+    </div>
+
+    <!-- 4.2 考勤 -->
+    <h3 id="fr02">4.2 考勤打卡 <span class="badge b-id">FR-02</span><span class="badge b-p0">P0</span></h3>
+    <p><b>目的</b>：记录员工出勤事实，自动识别异常，联动审批处理补卡，提供月度汇总。</p>
+
+    <h4>FR-02.1 上下班打卡</h4>
+    <ul>
+      <li><b>触发</b>：员工在打卡页点击「上班打卡」/「下班打卡」。</li>
+      <li><b>处理规则</b>：
+        <ul>
+          <li>打卡方式：定位打卡（GPS 半径 + 企业 Wi-Fi 白名单 + 部门 Beacon [Assumption, TBD]），支持外勤打卡（需填写外勤说明）。</li>
+          <li>判定：按班次规则比较打卡时间——上班早于窗口起始即「正常」，窗口内为「迟到」，未打卡记「缺卡」；下班晚于规定时刻为「正常」，早于该时刻为「早退」。</li>
+          <li>同一工号同一考勤日只记一次上班/一次下班，重复点击提示「已完成打卡」。</li>
+          <li>异常（迟到/早退/缺卡）产生时，展示可发起的「补卡申请」入口。</li>
+        </ul>
+      </li>
+      <li><b>结果</b>：生成打卡记录并即时回显判定结果；员工可查看个人当日与历史记录。</li>
+    </ul>
+
+    <h4>FR-02.2 补卡申请</h4>
+    <ul>
+      <li><b>触发</b>：存在迟到/早退/缺卡的员工发起补卡。</li>
+      <li><b>处理规则</b>：补卡申请需选择日期与时段、填写补卡原因；提交后进入审批流（直接上级→考勤管理员），复用 FR-01 状态机。</li>
+      <li><b>结果</b>：通过后该时段判定更新为「正常」，并保留补卡留痕；驳回则维持原判定。</li>
+    </ul>
+
+    <h4>FR-02.3 月考勤统计</h4>
+    <ul>
+      <li>每月 1 日生成上月汇总：应出勤天数、正常/迟到/早退/缺卡次数、外勤次数、关联的有效补卡数。</li>
+      <li>员工可见本人汇总；部门主管可见本部门；考勤管理员可见全量并支持导出 [Assumption, TBD: 导出格式 Excel/CSV]。</li>
+    </ul>
+
+    <div class="demo">
+      <header>考勤打卡演示<span class="dir">模拟默认班次 09:00 / 18:00（窗口 9:00–9:30 判迟到）</span></header>
+      <div class="body">
+        <div class="row">
+          <button class="btn primary" id="ck-in">上班打卡</button>
+          <button class="btn primary" id="ck-out">下班打卡</button>
+          <label class="muted" style="font-size:13px"><input type="checkbox" id="ck-outside"> 外勤打卡</label>
+        </div>
+        <div class="state-line" id="ck-state">尚未打卡</div>
+        <div class="timeline" id="ck-records"></div>
+      </div>
+    </div>
+
+    <!-- 4.3 日程与会议 -->
+    <h3 id="fr03">4.3 日程与会议 <span class="badge b-id">FR-03</span><span class="badge b-p0">P0</span></h3>
+    <p><b>目的</b>：统一管理个人日程与会议室，提前发现时间冲突，让会议发起、参与、纪要形成闭环。</p>
+
+    <h4>FR-03.1 个人日程</h4>
+    <ul>
+      <li>员工可创建日程（标题、开始/结束时间、提醒、是否与其他成员共享 [Assumption, TBD: 他人可见范围]）。</li>
+      <li>创建时若与本人已有日程重叠，提示冲突并可强制「并存」。</li>
+      <li>日程提醒在开始前 15 分钟触发站内提醒与可选第三方推送 [Assumption, TBD]。</li>
+    </ul>
+
+    <h4>FR-03.2 会议预定</h4>
+    <ul>
+      <li><b>触发</b>：员工选择会议室、日期、开始时间与时长进行预定。</li>
+      <li><b>处理规则</b>：
+        <ul>
+          <li>冲突检测：拟定时段与已有预定重叠则该时段不可选，提示可用的相邻时段；</li>
+          <li>跨天会议：时长计算自然覆盖，同一会议室不可被两场会议重叠占用；</li>
+          <li>会议开始前 1 小时未到的预定支持「取消」，取消后资源释放。</li>
+        </ul>
+      </li>
+      <li><b>结果</b>：预定成功生成会议，自动邀请参会人并同步进参会人日程。</li>
+    </ul>
+
+    <h4>FR-03.3 发起与纪要</h4>
+    <ul>
+      <li>会议可关联发起人、主题、时间、会议室、参会人、附件。</li>
+      <li>参会人可回执「接受/暂定/拒绝」[Assumption, TBD]。</li>
+      <li>发起人可上传会议纪要，纪要仅参会人与有权人员可见。</li>
+    </ul>
+
+    <div class="demo">
+      <header>会议室预定演示（冲突检测）<span class="dir">A 会议室 14:00–15:00 已占用</span></header>
+      <div class="body">
+        <div class="grid2">
+          <div>
+            <div class="row"><label class="muted" style="font-size:13px">日期</label><input type="date" id="mt-date" value="2026-10-26"></div>
+            <div class="row"><label class="muted" style="font-size:13px">开始</label><select id="mt-start">
+              <option value="9">09:00</option><option value="10">10:00</option><option value="11">11:00</option>
+              <option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option>
+              <option value="16">16:00</option><option value="17">17:00</option></select>
+              <label class="muted" style="font-size:13px">时长</label><select id="mt-len">
+              <option value="1">1 小时</option><option value="2">2 小时</option></select></div>
+            <div class="row"><button class="btn primary" id="mt-book">预定 A 会议室</button></div>
+            <div class="state-line" id="mt-msg" style="min-height:20px"></div>
+          </div>
+          <div>
+            <div class="muted" style="font-size:12.5px;margin-bottom:4px">当日 A 会议室占用</div>
+            <div class="timeline" id="mt-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4.4 任务与协作 -->
+    <h3 id="fr04">4.4 任务与协作 <span class="badge b-id">FR-04</span><span class="badge b-p0">P0</span></h3>
+    <p><b>目的</b>：让任务分派、跟进、完成有单一视图，关键节点不遗漏。</p>
+
+    <h4>FR-04.1 任务创建与指派</h4>
+    <ul>
+      <li>任意员工可创建任务：标题、负责人（可指派他人）、截止时间、优先级（高/中/低）、说明、所属项目（可选）[Assumption, TBD: 项目为轻量分组，不做复杂项目管理]。</li>
+      <li>被指派人员收到待办通知。</li>
+    </ul>
+
+    <h4>FR-04.2 状态流转与提醒</h4>
+    <table>
+      <tr><th>状态</th><th>进入条件</th><th>退出动作</th></tr>
+      <tr><td>待办</td><td>创建并被指派</td><td>负责人标记开始 → 进行中</td></tr>
+      <tr><td>进行中</td><td>负责人开始处理</td><td>标记完成 → 已完成</td></tr>
+      <tr><td>已完成</td><td>负责人标记完成</td><td>创建者可重新开启</td></tr>
+      <tr><td>逾期</td><td>超过截止时间仍未完成</td><td>完成任务后自动解除</td></tr>
+    </table>
+    <ul>
+      <li>到期提醒：截止前 24 小时与 1 小时各提醒一次负责人 [Assumption, TBD]；逾期后每日上午提醒直至完成。</li>
+      <li>创建者可查看任务进度与完成时间，无需审批即可重新开启。</li>
+    </ul>
+
+    <h4>FR-04.3 项目看板</h4>
+    <ul>
+      <li>项目内任务按「待办 / 进行中 / 已完成」分组展示，拖拽变更状态 [Assumption, TBD: 拖拽为优化项，MVP 可用按钮切换]。</li>
+      <li>项目成员可见项目内全部任务；非成员仅见被指派给自己的任务。</li>
+    </ul>
+
+    <div class="demo">
+      <header>任务管理演示（含逾期标红）<span class="dir">今天的日期按系统当前时间</span></header>
+      <div class="body">
+        <div class="row">
+          <input id="tk-title" placeholder="任务标题" style="flex:1;min-width:160px">
+          <select id="tk-pri"><option value="high">高</option><option value="mid">中</option><option value="low">低</option></select>
+          <input type="date" id="tk-due">
+          <button class="btn primary" id="tk-add">添加任务</button>
+        </div>
+        <div id="tk-list"></div>
+      </div>
+    </div>
+
+    <!-- 4.5 公告与知识库 -->
+    <h3 id="fr05">4.5 公告与知识库 <span class="badge b-id">FR-05</span><span class="badge b-p1">P1</span></h3>
+    <p><b>目的</b>：制度、通知与知识有权威的发布与沉淀入口，替代群消息式的扩散。</p>
+
+    <h4>FR-05.1 公告</h4>
+    <ul>
+      <li><b>发布</b>：系统管理员（或经授权的部门主管发布本部门公告 [Assumption, TBD]）创建公告，设置可见范围与到期时间。</li>
+      <li><b>已读统计</b>：公告查看后记录已读，发布者可查看范围内已读/未读明细。</li>
+      <li><b>生命周期</b>：草稿 → 已发布 →（到期自动）已下线；下线后普通员工不可见，管理员可检索历史。</li>
+    </ul>
+
+    <h4>FR-05.2 知识库</h4>
+    <ul>
+      <li>文档按树状节点组织，支持富文本与附件；每个节点可单独设置可见范围。</li>
+      <li>编辑记录版本，旧版本可回溯查看，不提供任意回滚覆盖 [Assumption, TBD]。</li>
+      <li>全局搜索按标题、正文、附件名检索，仅返回当前用户可见结果。</li>
+    </ul>
+
+    <h4>FR-05.3 首页聚合</h4>
+    <ul><li>登录首页聚合：我的待办（审批/补卡/会议回执）、我的任务、今日日程、最新公告，作为全部模块的统一入口，按时间倒序 [Assumption, TBD]。</li></ul>
+
+    <!-- 4.6 通讯录与组织 -->
+    <h3 id="fr06">4.6 通讯录与组织 <span class="badge b-id">FR-06</span><span class="badge b-p0">P0</span></h3>
+    <p><b>目的</b>：提供准确、按权限可检索的组织与人员信息。</p>
+
+    <h4>FR-06.1 组织架构</h4>
+    <ul>
+      <li>树状展示部门层级与成员归属，支持按部门展开、按姓名/工号搜索。</li>
+      <li>架构调整（新增部门、人员调岗、直属上级变更）由系统管理员维护，变更需在成员信息「在岗状态」字段同步 [Assumption, TBD: 与 HR 系统是否集成见 §6]。</li>
+    </ul>
+
+    <h4>FR-06.2 成员信息与可见范围</h4>
+    <ul>
+      <li>成员卡片展示：姓名、职位、部门、直属上级、办公地点、联系方式（手机号默认掩码显示，如 138****1234）。</li>
+      <li>默认可见范围：本人 + 本部门 + 公开信息；联系方式完整可见需系统管理员授权 [Assumption, TBD]。</li>
+      <li>离职成员移入「离职」状态，不再出现在检索结果，历史审批留痕保留。</li>
+    </ul>
+  </section>
+
+  <!-- ============ 5 共享规则 ============ -->
+  <section id="shared">
+    <h2><span class="sec-no">5</span>共享规则</h2>
+
+    <h3>5.1 角色权限矩阵（跨模块通用）</h3>
+    <table>
+      <tr><th>能力</th><th>员工</th><th>部门主管</th><th>复核人</th><th>考勤管理员</th><th>系统管理员</th></tr>
+      <tr><td>提交审批 / 撤销 / 修改重提</td><td>✓ 本人</td><td>✓ 本人</td><td>✓ 本人</td><td>—</td><td>✓</td></tr>
+      <tr><td>审批处理</td><td>—</td><td>✓ 本部门</td><td>✓ 指定类型</td><td>✓ 补卡复核</td><td>✓</td></tr>
+      <tr><td>查看审批单</td><td>✓ 本人</td><td>✓ 本部门</td><td>✓ 相关单</td><td>✓ 补卡相关</td><td>✓ 全部</td></tr>
+      <tr><td>打卡</td><td>✓</td><td>✓</td><td>✓</td><td>—</td><td>✓</td></tr>
+      <tr><td>查看考勤</td><td>✓ 本人</td><td>✓ 本部门</td><td>—</td><td>✓ 全部</td><td>✓ 全部</td></tr>
+      <tr><td>预算/创建会议与任务</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+      <tr><td>发布公告</td><td>—</td><td>✓ 本部门[假设]</td><td>—</td><td>—</td><td>✓</td></tr>
+      <tr><td>知识库</td><td>按节点权限</td><td>按节点权限</td><td>按节点权限</td><td>按节点权限</td><td>✓ 全部</td></tr>
+      <tr><td>维护组织 / 通讯录 / 审批模板</td><td>只读</td><td>只读</td><td>只读</td><td>只读</td><td>✓</td></tr>
+    </table>
+
+    <h3>5.2 通知规则</h3>
+    <table>
+      <tr><th>触发事件</th><th>接收人</th><th>渠道</th><th>时效</th></tr>
+      <tr><td>审批单提交</td><td>当前节点审批人</td><td>站内待办 + 第三方推送[假设]</td><td>即时</td></tr>
+      <tr><td>审批终态（通过/驳回）</td><td>提交人</td><td>站内 + 推送[假设]</td><td>即时</td></tr>
+      <tr><td>任务指派 / 到期</td><td>负责人</td><td>站内 + 推送[假设]</td><td>指派即时；到期前 24h/1h[假设]</td></tr>
+      <tr><td>会议开始提醒</td><td>参会人</td><td>站内 + 推送[假设]</td><td>开始前 15 分钟[假设]</td></tr>
+      <tr><td>公告发布</td><td>可见范围内成员</td><td>站内 + 推送[假设]</td><td>发布即时；24h 未读再提醒[假设]</td></tr>
+      <tr><td>补卡结果</td><td>申请人</td><td>站内 + 推送[假设]</td><td>终态即时</td></tr>
+    </table>
+
+    <h3>5.3 审计与留痕</h3>
+    <ul>
+      <li>审批单的全部操作（提交、同意、驳回、转办、加签、撤销、修改重提）记录操作人、时间、意见与状态变更，不可删除。</li>
+      <li>考勤判定修改（如有效补卡）保留修改前值与操作人。</li>
+      <li>审计记录保存时长 ≥ 2 年 [Assumption, TBD]。</li>
+    </ul>
+
+    <h3>5.4 数据可见边界</h3>
+    <ul>
+      <li>默认最小可见：本人数据 + 本部门数据 + 明确公开的数据；跨部门数据以节点权限或管理员授权为准。</li>
+      <li>考勤与审批互为引用时（如补卡单关联打卡记录），引用关系仅对流程相关方可见。</li>
+      <li>通讯录手机号默认掩码，完整号码仅授权角色可见。</li>
+    </ul>
+
+    <h3>5.5 通用校验与日历规则</h3>
+    <ul>
+      <li>所有时间字段使用同一时区（Asia/Shanghai），结束时间不得早于开始时间。</li>
+      <li>节假日与调休由考勤管理员按年度配置，自然日与工作日的计算口径在班次规则中声明，避免跨模块歧义 [Assumption, TBD]。</li>
+    </ul>
+  </section>
+
+  <!-- ============ 6 开放问题 ============ -->
+  <section id="open">
+    <h2><span class="sec-no">6</span>开放问题</h2>
+    <p class="muted">以下决策会实质影响权限、合规或核心流程，需在评审时确认：</p>
+    <table>
+      <tr><th>编号</th><th>问题</th><th>影响范围</th></tr>
+      <tr><td>OQ-01</td><td>假期额度（年假/调休等）的初始值与发放规则由谁维护、以什么口径发放？</td><td>FR-01.4 联动规则</td></tr>
+      <tr><td>OQ-02</td><td>考勤结果是否用于薪酬计算？若用于，异常数据的截止处理时限如何约定？</td><td>FR-02、合规</td></tr>
+      <tr><td>OQ-03</td><td>上报报销时发票与金额的核对方式（人工/税务接口）？报销上限或分权审批阈值？</td><td>FR-01 复核链</td></tr>
+      <tr><td>OQ-04</td><td>是否需要与外部 HR/单点登录（SSO）/企业微信或钉钉集成，采用哪种身份源与推送通道？</td><td>通知渠道、组织同步</td></tr>
+      <tr><td>OQ-05</td><td>组织规模与部署形态（公有云 SaaS / 私有化），影响通讯录可见策略与服务承诺？</td><td>FR-06、5.2</td></tr>
+      <tr><td>OQ-06</td><td>加班与调休的计算规则（时长折算、审批前置）？</td><td>FR-02 班次、FR-01 类型</td></tr>
+    </table>
+  </section>
+
+  <footer style="padding:26px 4px;color:#9aa3b2;font-size:12.5px;text-align:center">
+    本文档为评审稿，所有标注 [Assumption, TBD] 的内容默认按当前假设执行，待评审确认后更新。
+  </footer>
+</main>
+
+<script>
+/* ============ 审批流演示 ============ */
+(function(){
+  const steps=["submit","mgr","hr","done"];
+  const names={submit:"提交申请",mgr:"直接上级",hr:"HR 复核",done:"结果"};
+  const state={node:0,end:null}; /* node: 0提交 1上级 2HR 3终态 */
+  const $s=document.getElementById.bind(document);
+  const stepEls=steps.map(s=>$s("ap-steps").querySelector('[data-step="'+s+'"]'));
+  const logBox=$s("ap-log");
+  function render(){
+    const n=state.node,end=state.end;
+    stepEls.forEach((el,i)=>{
+      el.className="step";
+      if(end){
+        if(end==="ok"){ if(i<=n) el.className="step done"; }
+        else { if(i===n) el.className="step fail"; else if(i<n) el.className="step done"; }
+      } else {
+        if(i===n) el.className="step on"; else if(i<n) el.className="step done";
+      }
+    });
+    let txt;
+    if(end==="ok") txt='终态：<span class="chip ok">已通过</span> 假期额度扣减 2 天（事假）';
+    else if(end==="no") txt='终态：<span class="chip pending">已驳回</span>，可在原单上修改重提（已填内容保留）';
+    else if(state.end==="cancel") txt='状态：<b>已撤销</b>';
+    else if(n===1) txt='当前节点：<b>一级审批（直接上级）</b>';
+    else if(n===2) txt='当前节点：<b>HR 复核</b>（一级审批已通过）';
+    $s("ap-state").innerHTML=txt;
+    const box=$s("ap-ops");
+    if(end){
+      box.innerHTML='<button class="btn" id="ap-reset">重新演示</button>';
+      $s("ap-reset").onclick=function(){state.node=0;state.end=null;logBox.innerHTML=addLog("重新开始演示");render();};
+      return;
+    }
+    box.innerHTML= state.node===1
+      ? '<button class="btn no" id="ap-r">驳回</button><button class="btn ok" id="ap-a">同意</button>'
+      : '<button class="btn no" id="ap-r">驳回</button><button class="btn ok" id="ap-a">同意</button>';
+    $s("ap-a").onclick=function(){
+      if(state.node===1){ state.node=2; logBox.innerHTML+=addLog("直接上级 同意：同意，按流程办理。"); }
+      else if(state.node===2){ state.node=3; state.end="ok"; logBox.innerHTML+=addLog("HR 复核 同意：假期额度已扣减 2 天。"); }
+      render();
+    };
+    $s("ap-r").onclick=function(){
+      state.node=3; state.end="no";
+      logBox.innerHTML+=addLog((state.nodePrev===2?"HR 复核":"直接上级")+" 驳回：请补充事由说明。");
+      render();
+    };
+  }
+  function addLog(t){return '<div>· '+new Date().toTimeString().slice(0,5)+' '+t+'</div>';}
+  state.node=1;
+  logBox.innerHTML=addLog("申请人提交「事假 2 天」申请，已通知直接上级。");
+  render();
+})();
+
+/* ============ 考勤打卡演示 ============ */
+(function(){
+  const $s=document.getElementById.bind(document);
+  const rec=$s("ck-records"), state=$s("ck-state");
+  let hasIn=false,hasOut=false,inTime=null,outTime=null,outside=false;
+  $s("ck-outside").onchange=function(){outside=this.checked;};
+  function judge(type,t){
+    const d=new Date(t);
+    if(type==="in"){
+      const m=d.getHours()*60+d.getMinutes();
+      if(outside) return "外勤";
+      if(m<=9*60) return "正常";
+      if(m<=9*60+30) return "迟到";
+      return "缺卡";
+    }
+    const m=d.getHours()*60+d.getMinutes();
+    if(outside) return "外勤";
+    if(m>=18*60) return "正常";
+    return "早退";
+  }
+  function add(t){
+    const div=document.createElement("div");
+    div.className=t.flag==="ok"?"ok":"";
+    div.textContent=new Date(t.t).toTimeString().slice(0,5)+" "+t.label+"：判定 "+t.result;
+    rec.appendChild(div);
+  }
+  $s("ck-in").onclick=function(){
+    if(hasIn){state.innerHTML="重复点击：<b>已完成上班打卡</b>";return;}
+    hasIn=true; inTime=new Date();
+    const r=judge("in",inTime);
+    if(r==="迟到"){add({t:inTime,label:"上班打卡",result:"迟到",flag:""});state.innerHTML='打卡成功（定位），判定：<span class="chip pending">迟到</span>，可发起「补卡申请」';}
+    else if(r==="外勤"){add({t:inTime,label:"上班打卡(外勤)",result:"外勤",flag:""});state.innerHTML='外勤打卡成功，判定：<span class="chip normal">外勤</span>，已记录外勤说明';}
+    else {add({t:inTime,label:"上班打卡",result:"正常",flag:"ok"});state.innerHTML='打卡成功（定位），判定：<span class="chip ok">正常</span>';}
+  };
+  $s("ck-out").onclick=function(){
+    if(hasOut){state.innerHTML="重复点击：<b>已完成下班打卡</b>";return;}
+    if(!hasIn){state.innerHTML='异常：<span class="chip pending">未打上班卡</span>，请先完成上班打卡或发起补卡';return;}
+    hasOut=true; outTime=new Date();
+    const r=judge("out",outTime);
+    if(r==="早退"){add({t:outTime,label:"下班打卡",result:"早退",flag:""});state.innerHTML='打卡成功，判定：<span class="chip pending">早退</span>，可发起「补卡申请」';}
+    else if(r==="外勤"){add({t:outTime,label:"下班打卡(外勤)",result:"外勤",flag:""});state.innerHTML='外勤打卡成功，判定：<span class="chip normal">外勤</span>';}
+    else {add({t:outTime,label:"下班打卡",result:"正常",flag:"ok"});state.innerHTML='打卡成功，判定：<span class="chip ok">正常</span>，今日出勤完整';}
+  };
+})();
+
+/* ============ 会议室预定演示 ============ */
+(function(){
+  const $s=document.getElementById.bind(document);
+  const list=$s("mt-list"),msg=$s("mt-msg");
+  /* BA Room A 固定占用 14:00-15:00 */
+  const booked=[{start:14,len:1}];
+  function renderList(){
+    list.innerHTML="";
+    if(!booked.length){list.innerHTML='<div class="muted">当天暂无占用（选择其他时间段预定）</div>';return;}
+    booked.sort((a,b)=>a.start-b.start);
+    booked.forEach(b=>{
+      const d=document.createElement("div");
+      d.className="ok";
+      d.textContent=b.start+":00-"+(b.start+b.len)+":00 已占用";
+      list.appendChild(d);
+    });
+  }
+  renderList();
+  $s("mt-book").onclick=function(){
+    const d=$s("mt-date").value;
+    if(!d){msg.innerHTML='<span class="chip pending">请选择日期</span>';return;}
+    const start=+$s("mt-start").value, len=+$s("mt-len").value;
+    const conflict=booked.some(b=>!((start+len)<=b.start || start>=(b.start+b.len)));
+    if(conflict){
+      msg.innerHTML='<span class="chip pending">冲突</span> 该时段已被占用（'+start+':00-'+(start+len)+':00），仅可 <span class="muted">并存</span> 或改时段';
+      return;
+    }
+    booked.push({start,len});
+    msg.innerHTML='<span class="chip ok">预定成功</span> '+d+' '+start+':00-'+(start+len)+':00 A 会议室';
+    renderList();
+  };
+})();
+
+/* ============ 任务管理演示 ============ */
+(function(){
+  const $s=document.getElementById.bind(document);
+  const list=$s("tk-list");
+  const tasks=[];
+  function todayStr(){
+    const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+  function render(){
+    list.innerHTML="";
+    if(!tasks.length){list.innerHTML='<div class="empty">暂无任务，添加一条试试（截止时间早于今天会自动标红为逾期）</div>';return;}
+    tasks.forEach((t,idx)=>{
+      const div=document.createElement("div");
+      div.className="list-item"+(t.done?" done-item":"");
+      const overdue=!t.done && t.due && t.due<todayStr();
+      const pmap={high:"高",mid:"中",low:"低"};
+      div.innerHTML='<span class="pri '+t.pri+'">'+pmap[t.pri]+'</span>'
+        +'<span class="t" style="flex:1">'+t.title+'</span>'
+        +'<span class="muted" style="font-size:12px">截止 '+(t.due||"未设置")+(overdue?' <span class="chip pending">已逾期</span>':"")+'</span>'
+        +(t.done?'<span class="chip ok">已完成</span>':'<button class="btn sm" data-i="'+idx+'">完成</button>');
+      if(!t.done) div.querySelector("button").onclick=function(){tasks[idx].done=true;render();};
+      list.appendChild(div);
+    });
+  }
+  render();
+  $s("tk-add").onclick=function(){
+    const title=$s("tk-title").value.trim();
+    if(!title){$s("tk-title").placeholder="请输入任务标题";$s("tk-title").focus();return;}
+    tasks.push({title:title,pri:$s("tk-pri").value,due:$s("tk-due").value,done:false});
+    $s("tk-title").value="";$s("tk-due").value="";
+    render();
+  };
+  $s("tk-title").addEventListener("keydown",function(e){if(e.key==="Enter")$s("tk-add").click();});
+})();
+</script>
+</body>
+</html>
