@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>任务协作 · 协同办公系统</title>
+<link rel="stylesheet" href="assets/styles.css">
+<script src="assets/mock.js"></script>
+<script src="assets/api.js"></script>
+<script src="assets/ui.js"></script>
+</head>
+<body data-page="task">
+<aside class="app-nav">
+  <div class="brand">
+    <div class="brand-mark">OA</div>
+    <div class="brand-name">协同办公系统</div>
+  </div>
+  <nav class="nav-list">
+    <a class="nav-item" data-nav="home" href="index.html"><span data-icon="home"></span>工作台</a>
+    <a class="nav-item" data-nav="approval" href="approval.html"><span data-icon="file-check"></span>审批</a>
+    <a class="nav-item" data-nav="attendance" href="attendance.html"><span data-icon="clock"></span>考勤</a>
+    <a class="nav-item" data-nav="meeting" href="meeting.html"><span data-icon="calendar"></span>日程会议</a>
+    <a class="nav-item" data-nav="task" href="task.html"><span data-icon="list-checks"></span>任务协作</a>
+    <a class="nav-item" data-nav="knowledge" href="knowledge.html"><span data-icon="book-open"></span>公告知识库</a>
+    <a class="nav-item" data-nav="contacts" href="contacts.html"><span data-icon="users"></span>通讯录</a>
+  </nav>
+  <div class="nav-foot">
+    <div class="user-chip">
+      <div class="avatar" id="nav-avatar">张</div>
+      <div class="user-meta">
+        <div class="user-name" id="nav-name">张伟</div>
+        <div class="user-dept" id="nav-dept">市场部 · 市场经理</div>
+      </div>
+    </div>
+  </div>
+</aside>
+<main class="app-content">
+  <div class="bg-tint"></div>
+  <div class="page-head">
+    <div>
+      <h2>任务协作</h2>
+      <div class="sub">任务分派 · 跟进 · 看板</div>
+    </div>
+  </div>
+
+  <div id="stat-load" style="margin-bottom:20px">
+    <div class="stat-grid cols3">
+      <div class="stat"><div class="skeleton"></div><div class="skeleton"></div></div>
+      <div class="stat"><div class="skeleton"></div><div class="skeleton"></div></div>
+      <div class="stat"><div class="skeleton"></div><div class="skeleton"></div></div>
+    </div>
+  </div>
+  <div id="statBox" class="stat-grid cols3" style="display:none;margin-bottom:20px">
+    <div class="stat reveal"><div class="label">总任务</div><div class="num primary" id="statTotal">0</div><div class="foot">全部协作任务</div></div>
+    <div class="stat reveal" style="animation-delay:.05s"><div class="label">进行中</div><div class="num" id="statDoing">0</div><div class="foot">已开始跟进的任务</div></div>
+    <div class="stat reveal" style="animation-delay:.1s"><div class="label">逾期</div><div class="num danger" id="statOverdue">0</div><div class="foot">未完成且已过期</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-h">新建任务 <span class="link"></span></div>
+    <div class="card-b reveal">
+      <div class="form-grid">
+        <div class="field" style="grid-column:1/-1"><label>任务标题 *</label><input class="input" id="t-title" placeholder="请输入任务标题"></div>
+        <div class="field"><label>优先级</label><select class="select" id="t-pri"><option value="high">高</option><option value="mid" selected>中</option><option value="low">低</option></select></div>
+        <div class="field"><label>截止日期</label><input class="input" type="date" id="t-due"></div>
+        <div class="field"><label>负责人</label><select class="select" id="t-assignee"></select></div>
+        <div class="field"><label>所属项目</label><input class="input" id="t-project" placeholder="可空"></div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+        <button class="btn btn-primary" id="t-add">添加任务</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-h">任务列表 <span class="link"></span></div>
+    <div class="card-b" id="listWrap">
+      <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h">项目看板 <span class="link"></span></div>
+    <div class="card-b reveal">
+      <div class="board" id="board"></div>
+    </div>
+  </div>
+</main>
+<script src="assets/icons.js"></script>
+<script src="assets/nav-active.js"></script>
+<script>
+(function () {
+  var PRI_LABEL = { high: '高', mid: '中', low: '低' };
+  var STATUS_CHIP = { '待办': 'muted', '进行中': 'info', '已完成': 'ok' };
+  var DB = window.DB;
+  var tasks = [];
+
+  function todayISO() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function fillAssignees() {
+    var sel = document.getElementById('t-assignee');
+    sel.innerHTML = '';
+    DB.users.forEach(function (u) {
+      var o = document.createElement('option');
+      o.value = u.name;
+      o.textContent = u.name;
+      if (u.name === DB.currentUser.name) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
+  function isOverdue(t) {
+    return !t.done && t.due && t.due < todayISO();
+  }
+
+  function priHtml(t) {
+    return '<span class="pri ' + t.pri + '">' + PRI_LABEL[t.pri] + '</span>';
+  }
+
+  function statusChip(t) {
+    return '<span class="chip ' + (STATUS_CHIP[t.status] || 'muted') + '">' + t.status + '</span>';
+  }
+
+  function renderStats() {
+    var total = tasks.length;
+    var doing = tasks.filter(function (t) { return t.status === '进行中'; }).length;
+    var overdue = tasks.filter(isOverdue).length;
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statDoing').textContent = doing;
+    document.getElementById('statOverdue').textContent = overdue;
+  }
+
+  function renderList() {
+    var wrap = document.getElementById('listWrap');
+    if (!tasks.length) {
+      wrap.innerHTML = '<div class="empty">暂无任务</div>';
+      return;
+    }
+    var html = '';
+    tasks.forEach(function (t) {
+      var ov = isOverdue(t);
+      var dueNum = '<span class="num">' + t.due + '</span>' + (ov ? ' <span class="chip danger">已逾期</span>' : '');
+      var action = t.done
+        ? '<button class="btn btn-ghost btn-sm" data-re="' + t.id + '">重新开启</button>'
+        : '<button class="btn btn-secondary btn-sm" data-fin="' + t.id + '">完成</button>';
+      html += '<div class="list-item' + (t.done ? ' done' : '') + '">'
+        + priHtml(t)
+        + '<span class="grow"><span class="t">' + t.title + '</span>'
+          + (t.project ? '<span class="chip muted" style="margin-left:6px">' + t.project + '</span>' : '')
+        + '</span>'
+        + '<span>' + t.assignee + '</span>'
+        + '<span>' + dueNum + '</span>'
+        + statusChip(t)
+        + action
+        + '</div>';
+    });
+    wrap.innerHTML = html;
+    wrap.querySelectorAll('[data-fin]').forEach(function (b) {
+      b.addEventListener('click', function () { setDone(b.getAttribute('data-fin'), true); });
+    });
+    wrap.querySelectorAll('[data-re]').forEach(function (b) {
+      b.addEventListener('click', function () { setDone(b.getAttribute('data-re'), false); });
+    });
+  }
+
+  function renderBoard() {
+    var board = document.getElementById('board');
+    var groups = { '待办': [], '进行中': [], '已完成': [] };
+    tasks.forEach(function (t) { if (groups[t.status]) groups[t.status].push(t); });
+    var html = '';
+    ['待办', '进行中', '已完成'].forEach(function (st) {
+      var arr = groups[st];
+      html += '<div class="board-col"><div class="col-h">' + st + '<span class="cnt" style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--primary-soft);color:var(--primary);font-size:11px">' + arr.length + '</span></div>';
+      if (!arr.length) html += '<div class="empty" style="padding:14px">暂无</div>';
+      arr.forEach(function (t) {
+        var ov = isOverdue(t);
+        html += '<div class="board-card' + (t.done ? ' done" style="opacity:.6' : '') + '" data-id="' + t.id + '">'
+          + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">' + priHtml(t) + '<span class="grow" style="flex:1;font-weight:600">' + t.title + '</span></div>'
+          + '<div style="font-size:12px;color:var(--text-sub)">负责人：' + t.assignee + '</div>'
+          + '<div style="font-size:12px;color:var(--text-sub)">截止：<span class="num" style="' + (ov ? 'color:var(--danger);font-weight:600' : '') + '">' + t.due + '</span>' + (ov ? ' <span class="chip danger">已逾期</span>' : '') + '</div>'
+          + '</div>';
+      });
+      html += '</div>';
+    });
+    board.innerHTML = html;
+    board.querySelectorAll('.board-card').forEach(function (c) {
+      c.addEventListener('click', function () { openDetail(c.getAttribute('data-id')); });
+    });
+  }
+
+  function findTask(id) {
+    for (var i = 0; i < tasks.length; i++) if (tasks[i].id === id) return tasks[i];
+    return null;
+  }
+
+  function openDetail(id) {
+    var t = findTask(id);
+    if (!t) return;
+    var ov = isOverdue(t);
+    var foot = '';
+    if (!t.done) foot = '<button class="btn btn-primary" id="md-done">标记完成</button>';
+    UI.modal(t.title,
+      '<div style="font-size:13.5px;line-height:1.8">'
+        + '<div>状态：' + statusChip(t) + '　<span style="color:var(--text-sub)">负责人：</span>' + t.assignee + '</div>'
+        + '<div style="margin-top:8px">优先级：' + priHtml(t) + (t.project ? '　<span style="color:var(--text-sub)">项目：</span>' + t.project : '') + '</div>'
+        + '<div style="margin-top:8px">截止：<span class="num" style="' + (ov ? 'color:var(--danger);font-weight:600' : '') + '">' + t.due + '</span>' + (ov ? ' <span class="chip danger">已逾期</span>' : '') + '</div>'
+      + '</div>',
+      foot);
+    var btn = document.getElementById('md-done');
+    if (btn) btn.addEventListener('click', function () { UI.closeModal(); setDone(id, true); });
+  }
+
+  function setDone(id, done) {
+    API.setTaskDone(id, done).then(function (list) {
+      tasks = list;
+      renderAll();
+      UI.toast(done ? '任务已完成' : '任务已重新开启', 'ok');
+    });
+  }
+
+  function renderAll() {
+    renderStats();
+    renderList();
+    renderBoard();
+  }
+
+  function init() {
+    fillAssignees();
+    document.getElementById('statBox').style.display = '';
+    var sl = document.getElementById('stat-load');
+    if (sl) sl.remove();
+    document.getElementById('t-add').addEventListener('click', addTask);
+    document.getElementById('t-due').value = todayISO();
+    API.fetchTasks().then(function (list) {
+      tasks = list;
+      renderAll();
+    });
+  }
+
+  function addTask() {
+    var title = document.getElementById('t-title').value.trim();
+    var titleF = document.getElementById('t-title');
+    var prjF = document.getElementById('t-project');
+    if (!title) {
+      titleF.closest('.field').classList.add('invalid');
+      UI.toast('请输入任务标题', 'danger');
+      titleF.focus();
+      return;
+    }
+    titleF.closest('.field').classList.remove('invalid');
+    prjF.closest('.field').classList.remove('invalid');
+    var btn = document.getElementById('t-add');
+    btn.disabled = true; btn.textContent = '提交中…';
+    API.addTask({
+      title: title,
+      pri: document.getElementById('t-pri').value,
+      due: document.getElementById('t-due').value,
+      assignee: document.getElementById('t-assignee').value,
+      project: prjF.value.trim()
+    }).then(function (list) {
+      tasks = list;
+      btn.disabled = false; btn.innerHTML = '添加任务';
+      document.getElementById('t-title').value = '';
+      document.getElementById('t-project').value = '';
+      document.getElementById('t-due').value = todayISO();
+      renderAll();
+      UI.toast('任务已创建，负责人将收到待办提醒', 'ok');
+    });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

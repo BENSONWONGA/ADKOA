@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>审批 · 协同办公系统</title>
+<link rel="stylesheet" href="assets/styles.css">
+<script src="assets/mock.js"></script>
+<script src="assets/api.js"></script>
+<script src="assets/ui.js"></script>
+</head>
+<body data-page="approval">
+<aside class="app-nav">
+  <div class="brand">
+    <div class="brand-mark">OA</div>
+    <div class="brand-name">协同办公系统</div>
+  </div>
+  <nav class="nav-list">
+    <a class="nav-item" data-nav="home" href="index.html"><span data-icon="home"></span>工作台</a>
+    <a class="nav-item" data-nav="approval" href="approval.html"><span data-icon="file-check"></span>审批</a>
+    <a class="nav-item" data-nav="attendance" href="attendance.html"><span data-icon="clock"></span>考勤</a>
+    <a class="nav-item" data-nav="meeting" href="meeting.html"><span data-icon="calendar"></span>日程会议</a>
+    <a class="nav-item" data-nav="task" href="task.html"><span data-icon="list-checks"></span>任务协作</a>
+    <a class="nav-item" data-nav="knowledge" href="knowledge.html"><span data-icon="book-open"></span>公告知识库</a>
+    <a class="nav-item" data-nav="contacts" href="contacts.html"><span data-icon="users"></span>通讯录</a>
+  </nav>
+  <div class="nav-foot">
+    <div class="user-chip">
+      <div class="avatar" id="nav-avatar">张</div>
+      <div class="user-meta">
+        <div class="user-name" id="nav-name">张伟</div>
+        <div class="user-dept" id="nav-dept">市场部 · 市场经理</div>
+      </div>
+    </div>
+  </div>
+</aside>
+<main class="app-content">
+  <div class="bg-tint"></div>
+  <div class="page-head reveal">
+    <div>
+      <h2>审批</h2>
+      <div class="sub">申请、审批与进度查询</div>
+    </div>
+  </div>
+
+  <div class="tabs reveal" style="animation-delay:.05s">
+    <div class="tab active" data-tab="create">发起申请</div>
+    <div class="tab" data-tab="my">我的申请<span class="cnt" id="my-count">0</span></div>
+    <div class="tab" data-tab="pend">待办审批<span class="cnt" id="pend-count">0</span></div>
+  </div>
+
+  <section id="panel-create">
+    <div class="card reveal" style="animation-delay:.1s">
+      <div class="card-b">
+        <div class="type-row" id="type-row" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+          <button type="button" class="chip info type-btn" data-type="请假">请假</button>
+          <button type="button" class="chip muted type-btn" data-type="报销">报销</button>
+          <button type="button" class="chip muted type-btn" data-type="用章">用章</button>
+        </div>
+        <div id="form-area"></div>
+        <div style="text-align:right;margin-top:6px">
+          <button type="button" class="btn btn-primary" id="btn-submit"><span data-icon="send"></span>提交申请</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="panel-my" style="display:none">
+    <div class="card">
+      <div class="card-b" style="padding:0;overflow:auto">
+        <table class="tbl">
+          <thead><tr>
+            <th>单号</th><th>类型</th><th>标题</th><th>提交时间</th><th>当前节点</th><th>状态</th><th>操作</th>
+          </tr></thead>
+          <tbody id="my-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="panel-pend" style="display:none">
+    <div class="card">
+      <div class="card-b" style="padding:0;overflow:auto">
+        <table class="tbl">
+          <thead><tr>
+            <th>申请人</th><th>类型</th><th>标题</th><th>提交时间</th><th>当前节点</th><th>操作</th>
+          </tr></thead>
+          <tbody id="pend-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+<script>
+(function () {
+  'use strict';
+  var currentType = '请假';
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function selOptions(list, sel) {
+    return list.map(function (o) { return '<option value="' + o + '"' + (o === sel ? ' selected' : '') + '>' + o + '</option>'; }).join('');
+  }
+  function markInv(id, msg) {
+    var el = document.getElementById(id);
+    var f = el && el.closest('.field');
+    if (f) {
+      f.classList.add('invalid');
+      if (msg) { var er = f.querySelector('.error'); if (er) er.textContent = msg; }
+    }
+  }
+  function clearInv(container) {
+    var fs = container.querySelectorAll('.field.invalid');
+    for (var i = 0; i < fs.length; i++) fs[i].classList.remove('invalid');
+  }
+  function skeletonRows(n, span) {
+    var s = '';
+    for (var i = 0; i < n; i++) s += '<tr><td colspan="' + span + '"><div class="skeleton"></div></td></tr>';
+    return s;
+  }
+  var L = {
+    leaveType: '假期类型', start: '开始日期', end: '结束日期', days: '时长(天)',
+    reason: '事由/说明', attach: '附件', amount: '金额', goods: '印章类型', dept: '归属部门'
+  };
+
+  function buildForm(type, pfx, pre) {
+    pre = pre || {};
+    var html = '', collect, validate, title, bind;
+    if (type === '请假') {
+      var lt = pre.leaveType || '年假';
+      html = '<div class="form-grid">' +
+        '<div class="field"><label>假期类型</label><select class="select" id="' + pfx + 'lt">' + selOptions(['年假', '事假', '病假', '调休'], lt) + '</select></div>' +
+        '<div class="field"><label>开始日期</label><input type="date" class="input" id="' + pfx + 'start" value="' + esc(pre.start || '') + '"></div>' +
+        '<div class="field"><label>结束日期</label><input type="date" class="input" id="' + pfx + 'end" value="' + esc(pre.end || '') + '"></div>' +
+        '<div class="field"><label>时长（自然日）</label><input type="text" class="input" id="' + pfx + 'days" readonly placeholder="选择日期后自动计算" value="' + esc(pre.days ? pre.days + ' 天' : '') + '"><div class="error">请假天数超过剩余年假额度</div></div>' +
+        '</div>' +
+        '<p class="hint" id="' + pfx + 'en" style="margin:0 0 14px;color:#b45309"><span data-icon="alert-triangle"></span>剩余年假额度尚余 <b>8</b> 天（假设 8 天），时长超过额度将无法提交</p>' +
+        '<div class="field"><label>事由</label><textarea class="textarea" id="' + pfx + 'reason" rows="3" placeholder="请填写请假事由">' + esc(pre.reason || '') + '</textarea><div class="error">请填写请假事由</div></div>' +
+        '<div class="field"><label>附件</label><input type="file" class="input" id="' + pfx + 'attach"><div class="hint" id="' + pfx + 'aname">未选择文件</div></div>';
+      bind = function () {
+        function calc() {
+          var s = document.getElementById(pfx + 'start').value, e = document.getElementById(pfx + 'end').value;
+          var dEl = document.getElementById(pfx + 'days');
+          if (s && e && e >= s) {
+            var d = Math.round((new Date(e) - new Date(s)) / 86400000) + 1;
+            dEl.value = d + ' 天';
+            return d;
+          }
+          dEl.value = '';
+          return -1;
+        }
+        document.getElementById(pfx + 'start').addEventListener('change', calc);
+        document.getElementById(pfx + 'end').addEventListener('change', calc);
+        document.getElementById(pfx + 'attach').addEventListener('change', function () {
+          document.getElementById(pfx + 'aname').textContent = this.files[0] ? this.files[0].name : '未选择文件';
+        });
+        calc();
+      };
+      validate = function () {
+        var ok = true;
+        var start = document.getElementById(pfx + 'start').value, end = document.getElementById(pfx + 'end').value;
+        if (!start) { markInv(pfx + 'start', '请选择开始日期'); ok = false; }
+        if (!end) { markInv(pfx + 'end', '请选择结束日期'); ok = false; }
+        if (!document.getElementById(pfx + 'reason').value.trim()) { markInv(pfx + 'reason', '请填写请假事由'); ok = false; }
+        var daysEl = document.getElementById(pfx + 'days');
+        var d = parseInt(daysEl.value);
+        if (start && end && end >= start && d > 8) { markInv(pfx + 'days', '请假天数超过剩余年假额度'); ok = false; }
+        return ok;
+      };
+      collect = function () {
+        return {
+          leaveType: document.getElementById(pfx + 'lt').value,
+          start: document.getElementById(pfx + 'start').value,
+          end: document.getElementById(pfx + 'end').value,
+          days: parseInt(document.getElementById(pfx + 'days').value) || 0,
+          reason: document.getElementById(pfx + 'reason').value.trim(),
+          attach: document.getElementById(pfx + 'aname').textContent !== '未选择文件' ? document.getElementById(pfx + 'aname').textContent : ''
+        };
+      };
+      title = function () { return document.getElementById(pfx + 'lt').value + '申请'; };
+    } else if (type === '报销') {
+      html = '<div class="field"><label>费用说明</label><textarea class="textarea" id="' + pfx + 'reason" rows="3" placeholder="请填写费用明细与事由">' + esc(pre.reason || '') + '</textarea><div class="error">请填写费用说明</div></div>' +
+        '<div class="form-grid">' +
+        '<div class="field"><label>报销金额（元）</label><input type="number" min="0" step="any" class="input" id="' + pfx + 'amount" value="' + esc(pre.amount || '') + '"><div class="hint" id="' + pfx + 'ahint">金额超过 5000 元将自动增加财务复核节点</div><div class="error">请输入大于 0 的金额</div></div>' +
+        '<div class="field"><label>归属部门</label><select class="select" id="' + pfx + 'dept">' + selOptions(['市场部', '产品部', '研发部', '财务部', '人力资源部', '行政部'], pre.dept || '市场部') + '</select></div>' +
+        '</div>' +
+        '<div class="field"><label>发票附件</label><input type="file" class="input" id="' + pfx + 'attach"><div class="hint" id="' + pfx + 'aname">未选择文件</div><div class="error">请上传发票附件</div></div>';
+      bind = function () {
+        var am = document.getElementById(pfx + 'amount'), hint = document.getElementById(pfx + 'ahint');
+        function upd() { if (parseFloat(am.value) > 5000) hint.style.color = 'var(--warn)'; else hint.style.color = ''; }
+        am.addEventListener('input', upd);
+        document.getElementById(pfx + 'attach').addEventListener('change', function () {
+          document.getElementById(pfx + 'aname').textContent = this.files[0] ? this.files[0].name : '未选择文件';
+          var f = document.getElementById(pfx + 'attach').closest('.field');
+          if (f && this.files[0]) f.classList.remove('invalid');
+        });
+      };
+      validate = function () {
+        var ok = true;
+        if (!document.getElementById(pfx + 'reason').value.trim()) { markInv(pfx + 'reason', '请填写费用说明'); ok = false; }
+        var am = parseFloat(document.getElementById(pfx + 'amount').value);
+        if (!(am > 0)) { markInv(pfx + 'amount', '请输入大于 0 的金额'); ok = false; }
+        if (!document.getElementById(pfx + 'attach').files[0]) { markInv(pfx + 'attach', '请上传发票附件'); ok = false; }
+        return ok;
+      };
+      collect = function () {
+        return {
+          reason: document.getElementById(pfx + 'reason').value.trim(),
+          amount: parseFloat(document.getElementById(pfx + 'amount').value) || 0,
+          dept: document.getElementById(pfx + 'dept').value,
+          attach: document.getElementById(pfx + 'aname').textContent !== '未选择文件' ? document.getElementById(pfx + 'aname').textContent : ''
+        };
+      };
+      title = function () { return '费用报销'; };
+    } else {
+      html = '<div class="form-grid">' +
+        '<div class="field"><label>印章类型</label><select class="select" id="' + pfx + 'goods">' + selOptions(['公章', '合同专用章', '财务章'], pre.goods || '公章') + '</select></div>' +
+        '<div class="field"><label>附件</label><input type="file" class="input" id="' + pfx + 'attach"><div class="hint" id="' + pfx + 'aname">未选择文件</div></div>' +
+        '</div>' +
+        '<div class="field"><label>用途</label><textarea class="textarea" id="' + pfx + 'reason" rows="3" placeholder="请填写用印事由与文件说明">' + esc(pre.reason || '') + '</textarea><div class="error">请填写用途说明</div></div>';
+      bind = function () {
+        document.getElementById(pfx + 'attach').addEventListener('change', function () {
+          document.getElementById(pfx + 'aname').textContent = this.files[0] ? this.files[0].name : '未选择文件';
+        });
+      };
+      validate = function () {
+        if (!document.getElementById(pfx + 'reason').value.trim()) { markInv(pfx + 'reason', '请填写用途说明'); return false; }
+        return true;
+      };
+      collect = function () {
+        return {
+          goods: document.getElementById(pfx + 'goods').value,
+          reason: document.getElementById(pfx + 'reason').value.trim(),
+          attach: document.getElementById(pfx + 'aname').textContent !== '未选择文件' && document.getElementById(pfx + 'aname').textContent !== '为选择文件' ? document.getElementById(pfx + 'aname').textContent : ''
+        };
+      };
+      title = function () { return '用章申请'; };
+    }
+    return { html: html, bind: bind, validate: validate, collect: collect, title: title };
+  }
+
+  /* ---------- 发起申请 ---------- */
+  function renderCreateForm() {
+    var area = document.getElementById('form-area');
+    var f = buildForm(currentType, 'f-');
+    area.innerHTML = f.html;
+    f.bind();
+    if (window.renderIcons) renderIcons();
+    document.getElementById('form-area')._spec = f;
+  }
+
+  var typeBtns = document.querySelectorAll('#type-row .type-btn');
+  for (var t = 0; t < typeBtns.length; t++) {
+    typeBtns[t].addEventListener('click', function () {
+      currentType = this.getAttribute('data-type');
+      for (var i = 0; i < typeBtns.length; i++) {
+        var b = typeBtns[i];
+        if (b.getAttribute('data-type') === currentType) { b.classList.add('info'); b.classList.remove('muted'); }
+        else { b.classList.remove('info'); b.classList.add('muted'); }
+      }
+      renderCreateForm();
+    });
+  }
+
+  document.getElementById('btn-submit').addEventListener('click', function () {
+    var btn = this;
+    var f = document.getElementById('form-area')._spec;
+    if (!f) return;
+    clearInv(document.getElementById('form-area'));
+    if (!f.validate()) {
+      UI.toast('请检查必填项', 'danger');
+      return;
+    }
+    btn.disabled = true; btn.innerHTML = '提交中…';
+    API.submitApproval({ type: currentType, title: f.title(), fields: f.collect() })
+      .then(function () {
+        btn.disabled = false; btn.innerHTML = '<span data-icon="send"></span>提交申请';
+        if (window.renderIcons) renderIcons();
+        UI.toast('提交成功，已通知审批人', 'ok');
+        renderCreateForm();
+        switchTab('my');
+        renderMy(); renderPend();
+      })
+      .catch(function () {
+        btn.disabled = false; btn.innerHTML = '<span data-icon="send"></span>提交申请';
+        if (window.renderIcons) renderIcons();
+        UI.toast('提交失败，请稍后重试', 'danger');
+      });
+  });
+
+  /* ---------- 我的申请 / 待办审批 ---------- */
+  function stepsHtml(item) {
+    var review = (item.type === '报销' && item.amount > 5000) ? '财务复核' : 'HR 复核';
+    var labels = ['提交申请', '直接上级', review, '终态'];
+    var cls = [];
+    if (item.status === '已通过') { cls = ['done', 'done', 'done', 'done']; }
+    else if (item.status === '已撤销') { cls = ['done', '', '', 'fail']; }
+    else if (item.status === '已驳回') { cls = ['done', '', 'fail', '']; }
+    else {
+      var idx = item.node === 'HR 复核' || item.node === '财务复核' ? 2 : 1;
+      cls = labels.map(function (_, i) { return i < idx ? 'done' : (i === idx ? 'now' : ''); });
+    }
+    return '<div class="steps">' + labels.map(function (l, i) {
+      return '<span class="step ' + (cls[i] || '') + '">' + l + '</span>';
+    }).join('') + '</div>';
+  }
+
+  function tlClass(action) {
+    if (action === '驳回') return 'danger';
+    if (action === '撤销') return 'warn';
+    return 'ok';
+  }
+
+  function fieldsSummary(item) {
+    var f = item.fields || {};
+    return Object.keys(L).filter(function (k) { return f[k] !== undefined && f[k] !== '' && f[k] !== null; })
+      .map(function (k) {
+        var v = k === 'amount' ? '¥' + f[k] : f[k];
+        return '<div style="display:flex;justify-content:space-between;gap:16px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">' +
+          '<span style="color:var(--text-sub)">' + L[k] + '</span><span>' + esc(v) + '</span></div>';
+      }).join('');
+  }
+
+  function detailHtml(item) {
+    return '<div style="margin-bottom:12px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span class="num" style="font-family:var(--font-mono);color:var(--text-sub)">' + esc(item.id) + '</span>' + statusChip(item.status) + '</div>' +
+      '<div style="font-size:15px;font-weight:600;margin-bottom:4px">' + esc(item.title) + '</div>' +
+      '<div style="color:var(--text-sub);font-size:12.5px;margin-bottom:14px">' + esc(item.applicant) + ' · ' + esc(item.applicantDept) + ' · 提交 ' + esc(item.submitTime) + '</div>' +
+      stepsHtml(item) +
+      '<div style="font-size:13px;font-weight:600;margin:16px 0 8px">申请详情</div>' +
+      (fieldsSummary(item) || '<div class="empty">暂无字段</div>') +
+      '<div style="font-size:13px;font-weight:600;margin:16px 0 8px">审批历史</div>' +
+      '<div class="timeline">' + (item.history || []).map(function (h) {
+        return '<div class="tl-item ' + tlClass(h.action) + '">' +
+          '<div class="tl-title">' + esc(h.who) + ' · ' + esc(h.action) + '</div>' +
+          '<div>' + esc(h.note || '') + '</div>' +
+          '<div class="tl-time">' + esc(h.time) + '</div></div>';
+      }).join('') + '</div></div>';
+  }
+
+  function statusChip(st) {
+    var map = { '审批中': 'info', '已通过': 'ok', '已驳回': 'danger', '已撤销': 'muted' };
+    return '<span class="chip ' + (map[st] || 'muted') + '">' + esc(st || '') + '</span>';
+  }
+
+  function openDetail(item) {
+    var footer = '';
+    if (item.status === '审批中') {
+      footer = '<button type="button" class="btn btn-danger" data-cancel>撤销</button>';
+    } else if (item.status === '已驳回') {
+      footer = '<button type="button" class="btn btn-primary" data-reedit>修改重提</button>';
+    }
+    var mask = UI.modal('申请详情 · ' + item.type, detailHtml(item), footer ? footer + '<button type="button" class="btn btn-secondary" data-close>关闭</button>' : '<button type="button" class="btn btn-secondary" data-close>关闭</button>');
+    var c = mask.querySelector('.modal-f');
+    if (c) c.addEventListener('click', function (e) {
+      if (e.target.getAttribute('data-close')) { UI.closeModal(); }
+      else if (e.target.getAttribute('data-cancel')) { confirmCancel(item); }
+      else if (e.target.getAttribute('data-reedit')) { reeditModal(item); }
+    });
+  }
+
+  function confirmCancel(item) {
+    var mask = UI.modal('撤销申请', '<p style="color:var(--text-sub);font-size:13px">确定要撤销单据 <b class="num">' + esc(item.id) + '</b>（' + esc(item.title) + '）吗？撤销后不可恢复。</p>',
+      '<button type="button" class="btn btn-secondary" data-close>取消</button><button type="button" class="btn btn-danger" data-ok>确认撤销</button>');
+    var c = mask.querySelector('.modal-f');
+    c.addEventListener('click', function (e) {
+      if (e.target.getAttribute('data-close')) UI.closeModal();
+      else if (e.target.getAttribute('data-ok')) {
+        e.target.disabled = true; e.target.textContent = '撤销中…';
+        API.cancelApproval(item.id).then(function (r) {
+          if (r.ok) {
+            UI.toast('已撤销申请', 'ok');
+            UI.closeModal();
+            renderMy(); renderPend();
+          } else {
+            e.target.disabled = false; e.target.textContent = '确认撤销';
+            UI.toast('撤销失败，仅审批中可撤销', 'danger');
+          }
+        });
+      }
+    });
+  }
+
+  function reeditModal(item) {
+    var f = buildForm(item.type, 'm-', item.fields || {});
+    var mask = UI.modal('修改重提 · ' + item.type, f.html,
+      '<button type="button" class="btn btn-secondary" data-close>取消</button><button type="button" class="btn btn-primary" data-ok>重新提交</button>');
+    f.bind();
+    if (window.renderIcons) renderIcons();
+    var cf = mask.querySelector('.modal-f');
+    cf.addEventListener('click', function (e) {
+      if (e.target.getAttribute('data-close')) UI.closeModal();
+      else if (e.target.getAttribute('data-ok')) {
+        clearInv(mask.querySelector('.modal-b'));
+        if (!f.validate()) { UI.toast('请检查必填项', 'danger'); return; }
+        e.target.disabled = true; e.target.textContent = '提交中…';
+        API.submitApproval({ type: item.type, title: f.title(), fields: f.collect() }).then(function () {
+          UI.toast('已重新提交', 'ok');
+          UI.closeModal();
+          renderMy(); renderPend();
+        }).catch(function () { e.target.disabled = false; e.target.textContent = '重新提交'; UI.toast('提交失败', 'danger'); });
+      }
+    });
+  }
+
+  function renderMy() {
+    var tb = document.getElementById('my-body');
+    tb.innerHTML = skeletonRows(4, 7);
+    API.fetchApprovals('my').then(function (res) {
+      document.getElementById('my-count').textContent = res.list.length;
+      if (res.list.length === 0) {
+        tb.innerHTML = '<tr><td colspan="7"><div class="empty">暂无审批记录</div></td></tr>';
+        return;
+      }
+      tb.innerHTML = res.list.map(function (a) {
+        return '<tr style="cursor:pointer" data-id="' + esc(a.id) + '">' +
+          '<td class="num">' + esc(a.id) + '</td>' +
+          '<td>' + esc(a.type) + '</td>' +
+          '<td>' + esc(a.title) + '</td>' +
+          '<td style="white-space:nowrap">' + esc(a.submitTime) + '</td>' +
+          '<td>' + esc(a.node || '—') + '</td>' +
+          '<td>' + statusChip(a.status) + '</td>' +
+          '<td><button type="button" class="btn btn-secondary btn-sm" data-detail>详情</button></td>' +
+          '</tr>';
+      }).join('');
+      Array.prototype.forEach.call(tb.querySelectorAll('[data-id]'), function (tr) {
+        tr.addEventListener('click', function () {
+          var found = null;
+          DB.approvals.forEach(function (x) { if (x.id === tr.getAttribute('data-id')) found = x; });
+          if (found) openDetail(found);
+        });
+      });
+    });
+  }
+
+  function renderPend() {
+    var tb = document.getElementById('pend-body');
+    tb.innerHTML = skeletonRows(3, 6);
+    API.fetchApprovals('pending').then(function (res) {
+      document.getElementById('pend-count').textContent = res.pending;
+      if (res.list.length === 0) {
+        tb.innerHTML = '<tr><td colspan="6"><div class="empty">暂无待办审批</div></td></tr>';
+        return;
+      }
+      tb.innerHTML = res.list.map(function (a) {
+        return '<tr>' +
+          '<td>' + esc(a.applicant) + '</td>' +
+          '<td>' + esc(a.type) + '</td>' +
+          '<td>' + esc(a.title) + '</td>' +
+          '<td style="white-space:nowrap">' + esc(a.submitTime) + '</td>' +
+          '<td>直接上级</td>' +
+          '<td style="white-space:nowrap"><button type="button" class="btn btn-secondary btn-sm" data-agree="' + esc(a.id) + '">同意</button> ' +
+          '<button type="button" class="btn btn-danger btn-sm" data-reject="' + esc(a.id) + '">驳回</button></td>' +
+          '</tr>';
+      }).join('');
+      Array.prototype.forEach.call(tb.querySelectorAll('[data-agree]'), function (b) {
+        b.addEventListener('click', function () { agree(b.getAttribute('data-agree')); });
+      });
+      Array.prototype.forEach.call(tb.querySelectorAll('[data-reject]'), function (b) {
+        b.addEventListener('click', function () { reject(b.getAttribute('data-reject')); });
+      });
+    });
+  }
+
+  function agree(id) {
+    API.handleApproval(id, '同意', '').then(function () {
+      UI.toast('已同意，流转至 HR 复核', 'ok');
+      renderMy(); renderPend();
+    });
+  }
+
+  function reject(id) {
+    var mask = UI.modal('驳回申请', '<div class="field"><label>驳回理由（必填）</label><textarea class="textarea" id="rj-reason" rows="3" placeholder="请填写驳回理由"></textarea><div class="error">请填写驳回理由</div></div>',
+      '<button type="button" class="btn btn-secondary" data-close>取消</button><button type="button" class="btn btn-danger" data-ok>确认驳回</button>');
+    mask.querySelector('#rj-reason').addEventListener('input', function () {
+      mask.querySelector('#rj-reason').closest('.field').classList.remove('invalid');
+    });
+    var cf = mask.querySelector('.modal-f');
+    cf.addEventListener('click', function (e) {
+      if (e.target.getAttribute('data-close')) UI.closeModal();
+      else if (e.target.getAttribute('data-ok')) {
+        var txt = mask.querySelector('#rj-reason').value.trim();
+        if (!txt) { mask.querySelector('#rj-reason').closest('.field').classList.add('invalid'); return; }
+        e.target.disabled = true; e.target.textContent = '提交中…';
+        API.handleApproval(id, '驳回', txt).then(function () {
+          UI.toast('已驳回并通知申请人', 'ok');
+          UI.closeModal();
+          renderMy(); renderPend();
+        });
+      }
+    });
+  }
+
+  /* ---------- 选项卡切换 ---------- */
+  var tabs = document.querySelectorAll('.tabs .tab');
+  function switchTab(name) {
+    for (var i = 0; i < tabs.length; i++) {
+      tabs[i].classList.toggle('active', tabs[i].getAttribute('data-tab') === name);
+    }
+    document.getElementById('panel-create').style.display = (name === 'create') ? '' : 'none';
+    document.getElementById('panel-my').style.display = (name === 'my') ? '' : 'none';
+    document.getElementById('panel-pend').style.display = (name === 'pend') ? '' : 'none';
+    if (name === 'my') renderMy();
+    if (name === 'pend') renderPend();
+  }
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].addEventListener('click', function () { switchTab(this.getAttribute('data-tab')); });
+  }
+
+  renderCreateForm();
+  renderMy();
+  renderPend();
+})();
+</script>
+<script src="assets/icons.js"></script>
+<script src="assets/nav-active.js"></script>
+</body>
+</html>

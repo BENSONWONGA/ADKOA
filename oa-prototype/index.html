@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>工作台 · 协同办公系统</title>
+<link rel="stylesheet" href="assets/styles.css">
+<script src="assets/mock.js"></script>
+<script src="assets/api.js"></script>
+<script src="assets/ui.js"></script>
+</head>
+<body data-page="home">
+<aside class="app-nav">
+  <div class="brand">
+    <div class="brand-mark">OA</div>
+    <div class="brand-name">协同办公系统</div>
+  </div>
+  <nav class="nav-list">
+    <a class="nav-item" data-nav="home" href="index.html"><span data-icon="home"></span>工作台</a>
+    <a class="nav-item" data-nav="approval" href="approval.html"><span data-icon="file-check"></span>审批</a>
+    <a class="nav-item" data-nav="attendance" href="attendance.html"><span data-icon="clock"></span>考勤</a>
+    <a class="nav-item" data-nav="meeting" href="meeting.html"><span data-icon="calendar"></span>日程会议</a>
+    <a class="nav-item" data-nav="task" href="task.html"><span data-icon="list-checks"></span>任务协作</a>
+    <a class="nav-item" data-nav="knowledge" href="knowledge.html"><span data-icon="book-open"></span>公告知识库</a>
+    <a class="nav-item" data-nav="contacts" href="contacts.html"><span data-icon="users"></span>通讯录</a>
+  </nav>
+  <div class="nav-foot">
+    <div class="user-chip">
+      <div class="avatar" id="nav-avatar">张</div>
+      <div class="user-meta">
+        <div class="user-name" id="nav-name">张伟</div>
+        <div class="user-dept" id="nav-dept">市场部 · 市场经理</div>
+      </div>
+    </div>
+  </div>
+</aside>
+<main class="app-content">
+  <div class="bg-tint"></div>
+  <div class="hero reveal" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px">
+    <div>
+      <h2 id="greet-title" style="font-family:var(--font-serif);font-size:24px;letter-spacing:.5px"></h2>
+      <div class="sub" id="greet-sub" style="color:var(--text-sub);font-size:13px;margin-top:6px"></div>
+    </div>
+    <div class="actions" style="display:flex;gap:10px;flex-wrap:wrap">
+      <a class="btn btn-secondary" href="approval.html"><span data-icon="file-check"></span>发起申请</a>
+      <a class="btn btn-secondary" href="meeting.html"><span data-icon="calendar-days"></span>会议室预定</a>
+      <a class="btn btn-secondary" href="task.html"><span data-icon="plus"></span>新建任务</a>
+    </div>
+  </div>
+
+  <div class="stat-grid reveal" style="animation-delay:.05s">
+    <a class="stat stat-card" id="stat-pending" href="approval.html" style="cursor:pointer">
+      <div class="label">待办审批</div>
+      <div class="num primary" id="st-pending"><div class="skeleton" style="width:60%"></div></div>
+      <div class="foot">进入审批页处理</div>
+    </a>
+    <div class="stat">
+      <div class="label">进行中任务</div>
+      <div class="num" id="st-doing"><div class="skeleton" style="width:60%"></div></div>
+      <div class="foot">正在推进的工作</div>
+    </div>
+    <div class="stat">
+      <div class="label">逾期任务</div>
+      <div class="num danger" id="st-overdue"><div class="skeleton" style="width:60%"></div></div>
+      <div class="foot">已超过截止日期</div>
+    </div>
+    <a class="stat stat-card" href="meeting.html" style="cursor:pointer">
+      <div class="label">今日会议</div>
+      <div class="num" id="st-meeting"><div class="skeleton" style="width:60%"></div></div>
+      <div class="foot">待开始的日程</div>
+    </a>
+  </div>
+
+  <div class="grid2 reveal" style="animation-delay:.1s">
+    <div class="card">
+      <div class="card-h"><span><span data-icon="inbox"></span>&nbsp;待办审批</span><a class="link" href="approval.html">查看待办 →</a></div>
+      <div class="card-b" id="home-pending"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span><span data-icon="calendar-days"></span>&nbsp;今日日程</span></div>
+      <div class="card-b" id="home-schedules"></div>
+    </div>
+  </div>
+
+  <div class="grid2 reveal" style="animation-delay:.15s">
+    <div class="card">
+      <div class="card-h"><span><span data-icon="list-checks"></span>&nbsp;我的任务</span><a class="link" href="task.html">查看全部 →</a></div>
+      <div class="card-b" id="home-tasks"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span><span data-icon="book-open"></span>&nbsp;最新公告</span><a class="link" href="knowledge.html">查看全部 →</a></div>
+      <div class="card-b" id="home-ann"></div>
+    </div>
+  </div>
+</main>
+<script>
+(function () {
+  'use strict';
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function localISO(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function skeletons(n) {
+    var s = '';
+    for (var i = 0; i < n; i++) s += '<div class="skeleton"></div>';
+    return s;
+  }
+  function chip(st) {
+    var map = { '审批中': 'info', '已通过': 'ok', '已驳回': 'danger', '已撤销': 'muted' };
+    return '<span class="chip ' + (map[st] || 'muted') + '">' + esc(st) + '</span>';
+  }
+  function priTag(p) {
+    var t = { high: '高', mid: '中', low: '低' }[p] || '中';
+    return '<span class="pri ' + esc(p) + '">' + t + '</span>';
+  }
+
+  var today = new Date();
+  var hour = today.getHours();
+  var greet = (hour < 6 ? '凌晨好' : hour < 12 ? '上午好' : hour < 18 ? '下午好' : '晚上好') + '，张伟';
+  document.getElementById('greet-title').textContent = greet;
+  document.getElementById('greet-sub').textContent =
+    today.getFullYear() + '年' + (today.getMonth() + 1) + '月' + today.getDate() + '日 ' +
+    ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][today.getDay()] +
+    ' · 市场部 · 市场经理';
+  var todayISO = localISO(today);
+
+  /* 统计卡 */
+  document.getElementById('st-pending').innerHTML = '<div class="skeleton" style="width:60%"></div>';
+  var stDone = document.getElementById('st-doing');
+  var stOver = document.getElementById('st-overdue');
+
+  API.fetchApprovals('pending').then(function (res) {
+    document.getElementById('st-pending').textContent = res.pending;
+  });
+
+  API.fetchTasks().then(function (tasks) {
+    var doing = tasks.filter(function (t) { return t.status === '进行中'; }).length;
+    var overdue = tasks.filter(function (t) { return !t.done && t.due < todayISO; }).length;
+    stDone.textContent = doing;
+    stOver.textContent = overdue;
+    if (overdue > 0) stOver.classList.add('danger');
+  });
+
+  API.fetchMeetings().then(function (m) {
+    var n = (m.meetings || []).filter(function (x) { return x.status === '待开始'; }).length;
+    document.getElementById('st-meeting').textContent = n;
+  });
+
+  /* 待办审批列表 */
+  var pendingBox = document.getElementById('home-pending');
+  pendingBox.innerHTML = skeletons(4);
+  API.fetchApprovals('pending').then(function (res) {
+    var list = res.list.slice(0, 4);
+    if (list.length === 0) {
+      pendingBox.innerHTML = '<div class="empty">暂无待办审批</div>';
+      return;
+    }
+    pendingBox.innerHTML = list.map(function (a) {
+      return '<a class="list-item" href="approval.html"><span class="grow" style="flex:1;min-width:0">' +
+        '<span style="color:var(--text-sub);font-size:12px">' + esc(a.applicant) + ' · ' + esc(a.type) + '</span><br>' +
+        esc(a.title) +
+        '<span style="color:var(--text-faint);font-size:12px"> · ' + esc(a.submitTime) + '</span></span>' +
+        chip(a.status) + '</a>';
+    }).join('');
+  });
+
+  /* 今日日程 */
+  var scBox = document.getElementById('home-schedules');
+  scBox.innerHTML = skeletons(4);
+  API.fetchMeetings().then(function (m) {
+    var list = (m.schedules || []).slice(0, 4);
+    if (list.length === 0) {
+      scBox.innerHTML = '<div class="empty">今日暂无日程</div>';
+      return;
+    }
+    scBox.innerHTML = list.map(function (s) {
+      return '<div class="list-item' + (s.done ? ' done' : '') + '">' +
+        '<span class="num" style="font-family:var(--font-mono);font-size:12.5px;color:var(--primary)">' + esc(s.time) + '</span>' +
+        '<span class="grow" style="flex:1;min-width:0">' + esc(s.title) + '</span>' +
+        '<span style="color:var(--text-faint);font-size:12px">' + esc(s.duration) + '</span></div>';
+    }).join('');
+  });
+
+  /* 我的任务 */
+  var taskBox = document.getElementById('home-tasks');
+  taskBox.innerHTML = skeletons(5);
+  API.fetchTasks().then(function (tasks) {
+    var list = tasks.slice(0, 5);
+    if (list.length === 0) {
+      taskBox.innerHTML = '<div class="empty">暂无任务</div>';
+      return;
+    }
+    taskBox.innerHTML = list.map(function (t) {
+      var overdue = !t.done && t.due < todayISO;
+      return '<div class="list-item' + (t.done ? ' done' : '') + '">' +
+        priTag(t.pri) +
+        '<span class="grow" style="flex:1;min-width:0"><span class="t">' + esc(t.title) + '</span>' +
+        (overdue ? ' <span style="color:var(--danger);font-weight:600">已逾期</span>' : '') + '</span>' +
+        '<span class="num" style="font-family:var(--font-mono);font-size:12.5px;color:var(--text-sub)">' + esc(t.due) + '</span></div>';
+    }).join('');
+  });
+
+  /* 最新公告 */
+  var annBox = document.getElementById('home-ann');
+  annBox.innerHTML = skeletons(4);
+  API.fetchAnnouncements().then(function (res) {
+    var sorted = (res.list || []).slice().sort(function (a, b) {
+      return (a.expired === b.expired) ? 0 : (a.expired ? 1 : -1);
+    });
+    var list = sorted.slice(0, 4);
+    if (list.length === 0) {
+      annBox.innerHTML = '<div class="empty">暂无公告</div>';
+      return;
+    }
+    annBox.innerHTML = list.map(function (a) {
+      var unread = !a.read && !a.expired;
+      return '<div class="list-item" style="cursor:pointer" data-id="' + esc(a.id) + '">' +
+        '<span class="grow" style="flex:1;min-width:0">' + esc(a.title) +
+        '<span style="color:var(--text-faint);font-size:12px"> · ' + esc(a.range) + '</span></span>' +
+        (unread ? '<span class="chip danger" style="font-size:11px;padding:2px 7px">未读</span>' : '') +
+        (a.done ? '' : '') +
+        '</div>';
+    }).join('');
+    Array.prototype.forEach.call(annBox.querySelectorAll('[data-id]'), function (row) {
+      row.addEventListener('click', function () {
+        var id = row.getAttribute('data-id');
+        var item = null;
+        (res.list || []).forEach(function (x) { if (x.id === id) item = x; });
+        if (!item) return;
+        API.markRead(id).then(function () {
+          UI.modal(item.title,
+            '<div style="color:var(--text-sub);font-size:12.5px;margin-bottom:12px">范围：' + esc(item.range) + '　发布时间：' + esc(item.pubDate) + '</div>' +
+            '<p style="font-size:14px;line-height:1.8">' + esc(item.body) + '</p>',
+            '<button type="button" class="btn btn-secondary" data-close>关闭</button>');
+          var m = document.querySelector('.modal-f');
+          if (m) m.addEventListener('click', function (e) { if (e.target.getAttribute('data-close') !== null) window.UI.closeModal(); });
+          var chipEl = row.querySelector('.chip');
+          if (chipEl) chipEl.remove();
+        });
+      });
+    });
+  });
+})();
+</script>
+<script src="assets/icons.js"></script>
+<script src="assets/nav-active.js"></script>
+</body>
+</html>

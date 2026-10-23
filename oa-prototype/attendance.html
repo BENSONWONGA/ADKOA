@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>考勤 · 协同办公系统</title>
+<link rel="stylesheet" href="assets/styles.css">
+<script src="assets/mock.js"></script>
+<script src="assets/api.js"></script>
+<script src="assets/ui.js"></script>
+</head>
+<body data-page="attendance">
+<aside class="app-nav">
+  <div class="brand">
+    <div class="brand-mark">OA</div>
+    <div class="brand-name">协同办公系统</div>
+  </div>
+  <nav class="nav-list">
+    <a class="nav-item" data-nav="home" href="index.html"><span data-icon="home"></span>工作台</a>
+    <a class="nav-item" data-nav="approval" href="approval.html"><span data-icon="file-check"></span>审批</a>
+    <a class="nav-item" data-nav="attendance" href="attendance.html"><span data-icon="clock"></span>考勤</a>
+    <a class="nav-item" data-nav="meeting" href="meeting.html"><span data-icon="calendar"></span>日程会议</a>
+    <a class="nav-item" data-nav="task" href="task.html"><span data-icon="list-checks"></span>任务协作</a>
+    <a class="nav-item" data-nav="knowledge" href="knowledge.html"><span data-icon="book-open"></span>公告知识库</a>
+    <a class="nav-item" data-nav="contacts" href="contacts.html"><span data-icon="users"></span>通讯录</a>
+  </nav>
+  <div class="nav-foot">
+    <div class="user-chip">
+      <div class="avatar" id="nav-avatar">张</div>
+      <div class="user-meta">
+        <div class="user-name" id="nav-name">张伟</div>
+        <div class="user-dept" id="nav-dept">市场部 · 市场经理</div>
+      </div>
+    </div>
+  </div>
+</aside>
+<main class="app-content">
+  <div class="bg-tint"></div>
+
+  <div class="page-head">
+    <div>
+      <h2>考勤</h2>
+      <div class="sub">今日打卡 · 本月统计 · 记录查询</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <!-- 左卡：今日打卡 -->
+    <div class="card reveal" style="animation-delay:.05s">
+      <div class="card-h">今日打卡</div>
+      <div class="card-b">
+        <div style="text-align:center">
+          <span data-icon="clock" style="display:inline-block;transform:scale(2.4);transform-origin:top center;color:var(--primary)"></span>
+        </div>
+        <div style="display:flex;justify-content:center;gap:26px;flex-wrap:wrap;margin:26px 0 4px">
+          <div style="font-size:13px;color:var(--text-sub)">上班 <span class="num" id="att-in-time">—</span> <span id="att-in-chip"><span class="chip muted">未打卡</span></span></div>
+          <div style="font-size:13px;color:var(--text-sub)">下班 <span class="num" id="att-out-time">—</span> <span id="att-out-chip"><span class="chip muted">未打卡</span></span></div>
+        </div>
+        <div class="hint" style="text-align:center;margin:12px 0 18px">演示说明：判定按系统当前时间模拟：9:30 前上班正常，18:00 前下班将判早退。</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+          <button class="btn btn-primary" id="bt-in">上班打卡</button>
+          <button class="btn btn-primary" id="bt-out">下班打卡</button>
+          <button class="btn" id="bt-reapply"><span data-icon="file-text"></span>补卡申请</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:16px">
+          <input type="checkbox" id="att-outside" style="accent-color:var(--primary)">
+          <label for="att-outside" style="font-size:13px;cursor:pointer">外勤打卡</label>
+          <span class="hint" id="att-outside-hint" style="display:none">外勤打卡需填写外勤说明。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右卡：本月统计 -->
+    <div class="card reveal" style="animation-delay:.1s">
+      <div class="card-h">本月统计</div>
+      <div class="card-b">
+        <div class="stat-grid cols3" id="att-stat">
+          <div class="stat"><div class="label">应出勤</div><div class="num" id="st-days">—</div></div>
+          <div class="stat"><div class="label">正常</div><div class="num ok" id="st-normal">—</div></div>
+          <div class="stat"><div class="label">迟到</div><div class="num warn" id="st-late">—</div></div>
+          <div class="stat"><div class="label">早退</div><div class="num" id="st-early">—</div></div>
+          <div class="stat"><div class="label">缺卡</div><div class="num danger" id="st-absent">—</div></div>
+          <div class="stat"><div class="label">外勤</div><div class="num" id="st-outside">—</div></div>
+        </div>
+        <div class="hint" id="att-stat-hint">待处理异常 — 项</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 下层卡：打卡记录 -->
+  <div class="card reveal" style="animation-delay:.15s;margin-top:18px">
+    <div class="card-h">打卡记录</div>
+    <div class="card-b" id="att-records">
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+(function () {
+  function chipFor(r) {
+    var cls = { '正常': 'ok', '迟到': 'warn', '早退': 'warn', '缺卡': 'danger', '外勤': 'info' }[r] || 'muted';
+    return '<span class="chip ' + cls + '">' + r + '</span>';
+  }
+  function toastType(r) {
+    if (r === '迟到' || r === '早退') return 'warn';
+    if (r === '缺卡') return 'danger';
+    return 'ok';
+  }
+
+  var outsideBox = document.getElementById('att-outside');
+  var outsideHint = document.getElementById('att-outside-hint');
+  outsideBox.addEventListener('change', function () {
+    outsideHint.style.display = this.checked ? '' : 'none';
+  });
+
+  /* 上班打卡 */
+  document.getElementById('bt-in').addEventListener('click', function () {
+    var btn = this;
+    btn.disabled = true;
+    API.clockIn(outsideBox.checked).then(function (r) {
+      document.getElementById('att-in-time').textContent = r.time;
+      document.getElementById('att-in-chip').innerHTML = chipFor(r.result);
+      UI.toast(r.msg, toastType(r.result));
+    }).catch(function () { btn.disabled = false; });
+  });
+
+  /* 下班打卡 */
+  document.getElementById('bt-out').addEventListener('click', function () {
+    var btn = this;
+    btn.disabled = true;
+    API.clockOut(outsideBox.checked).then(function (r) {
+      if (!r.ok) { UI.toast(r.msg, 'danger'); btn.disabled = false; return; }
+      document.getElementById('att-out-time').textContent = r.time;
+      document.getElementById('att-out-chip').innerHTML = chipFor(r.result);
+      UI.toast(r.msg, toastType(r.result));
+    }).catch(function () { btn.disabled = false; });
+  });
+
+  /* 补卡申请 */
+  document.getElementById('bt-reapply').addEventListener('click', function () {
+    var now = new Date();
+    var iso = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    UI.modal(
+      '补卡申请',
+      '<div class="field"><label>申请日期</label><input type="date" class="input" id="rep-date" value="' + iso + '"></div>' +
+      '<div class="field"><label>补卡时段</label><select class="select" id="rep-slot"><option value="上班">上班</option><option value="下班">下班</option></select></div>' +
+      '<div class="field" id="f-reason"><label>补卡原因</label><textarea class="input" id="rep-reason" rows="3" placeholder="请填写补卡原因（必填）"></textarea><div class="error">补卡原因不能为空</div></div>',
+      '<button class="btn btn-ghost" data-mc>取消</button><button class="btn btn-primary" id="rep-confirm">确认提交</button>'
+    );
+    document.getElementById('rep-confirm').addEventListener('click', function () {
+      var reason = document.getElementById('rep-reason').value.trim();
+      if (!reason) {
+        document.getElementById('f-reason').classList.add('invalid');
+        return;
+      }
+      this.disabled = true;
+      API.reapply({
+        date: document.getElementById('rep-date').value,
+        slot: document.getElementById('rep-slot').value,
+        reason: reason
+      }).then(function () {
+        UI.closeModal();
+        UI.toast('补卡申请已提交，进入审批流：直接上级 → 考勤管理员', 'ok');
+      });
+    });
+  });
+
+  /* 记录表格渲染 */
+  function renderRecords(list) {
+    var el = document.getElementById('att-records');
+    if (!list.length) { el.innerHTML = '<div class="empty">本月暂无记录</div>'; return; }
+    var rows = list.map(function (r) {
+      return '<tr><td class="num">' + r.date + '</td><td>' + r.in + '</td><td>' + r.out + '</td><td>' + chipFor(r.result) + '</td></tr>';
+    }).join('');
+    el.innerHTML = '<table class="tbl"><thead><tr><th>日期</th><th>上班</th><th>下班</th><th>结果</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  /* 初始加载 */
+  API.fetchAtt().then(function (d) {
+    var t = d.today;
+    if (t.in && t.in !== '—') {
+      document.getElementById('att-in-time').textContent = t.in;
+      document.getElementById('att-in-chip').innerHTML = chipFor(t.result);
+      document.getElementById('bt-in').disabled = true;
+    }
+    if (t.out && t.out !== '—') {
+      document.getElementById('att-out-time').textContent = t.out;
+      document.getElementById('att-out-chip').innerHTML = chipFor(t.result);
+      document.getElementById('bt-out').disabled = true;
+    }
+    var s = d.stat;
+    document.getElementById('st-days').textContent = s.days;
+    document.getElementById('st-normal').textContent = s.normal;
+    document.getElementById('st-late').textContent = s.late;
+    document.getElementById('st-early').textContent = s.early;
+    document.getElementById('st-absent').textContent = s.absent;
+    document.getElementById('st-outside').textContent = s.outside;
+    document.getElementById('att-stat-hint').textContent = '待处理异常 ' + s.pending + ' 项，缺卡需在 5 个工作日内补卡';
+    renderRecords(d.records);
+  });
+})();
+</script>
+<script src="assets/icons.js"></script>
+<script src="assets/nav-active.js"></script>
+</body>
+</html>

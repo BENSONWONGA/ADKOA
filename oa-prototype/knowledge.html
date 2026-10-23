@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>公告知识库 · 协同办公系统</title>
+<link rel="stylesheet" href="assets/styles.css">
+<script src="assets/mock.js"></script>
+<script src="assets/api.js"></script>
+<script src="assets/ui.js"></script>
+</head>
+<body data-page="knowledge">
+<aside class="app-nav">
+  <div class="brand">
+    <div class="brand-mark">OA</div>
+    <div class="brand-name">协同办公系统</div>
+  </div>
+  <nav class="nav-list">
+    <a class="nav-item" data-nav="home" href="index.html"><span data-icon="home"></span>工作台</a>
+    <a class="nav-item" data-nav="approval" href="approval.html"><span data-icon="file-check"></span>审批</a>
+    <a class="nav-item" data-nav="attendance" href="attendance.html"><span data-icon="clock"></span>考勤</a>
+    <a class="nav-item" data-nav="meeting" href="meeting.html"><span data-icon="calendar"></span>日程会议</a>
+    <a class="nav-item" data-nav="task" href="task.html"><span data-icon="list-checks"></span>任务协作</a>
+    <a class="nav-item" data-nav="knowledge" href="knowledge.html"><span data-icon="book-open"></span>公告知识库</a>
+    <a class="nav-item" data-nav="contacts" href="contacts.html"><span data-icon="users"></span>通讯录</a>
+  </nav>
+  <div class="nav-foot">
+    <div class="user-chip">
+      <div class="avatar" id="nav-avatar">张</div>
+      <div class="user-meta">
+        <div class="user-name" id="nav-name">张伟</div>
+        <div class="user-dept" id="nav-dept">市场部 · 市场经理</div>
+      </div>
+    </div>
+  </div>
+</aside>
+<main class="app-content">
+  <div class="bg-tint"></div>
+  <div class="page-head">
+    <div>
+      <h2>公告知识库</h2>
+      <div class="sub">公告 · 制度 · 知识沉淀</div>
+    </div>
+    <div class="actions">
+      <span class="chip danger" id="unread-badge" style="display:none">0 条未读</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="announce">公告</div>
+    <div class="tab" data-tab="docs">知识库</div>
+  </div>
+
+  <!-- 公告 -->
+  <section id="tab-announce">
+    <div id="announceWrap"><div class="skeleton"></div><div class="skeleton"></div></div>
+  </section>
+
+  <!-- 知识库 -->
+  <section id="tab-docs" style="display:none">
+    <div class="grid2">
+      <div class="card">
+        <div class="card-h">文档目录 <span class="link"></span></div>
+        <div class="card-b" id="docTree"><div class="skeleton"></div><div class="skeleton"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-h">文档视图 <span class="link"></span></div>
+        <div class="card-b" id="docView"><div class="skeleton"></div></div>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="assets/icons.js"></script>
+<script src="assets/nav-active.js"></script>
+<script>
+(function () {
+  var DB = window.DB;
+  var CATS = ['制度规范', '操作手册', '模板'];
+  var docs = [];
+  var unread = 0;
+  var activeDocId = null;
+
+  /* tabs */
+  document.querySelectorAll('.tab').forEach(function (tb) {
+    tb.addEventListener('click', function () {
+      document.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('active'); });
+      tb.classList.add('active');
+      var t = tb.getAttribute('data-tab');
+      document.getElementById('tab-announce').style.display = (t === 'announce') ? '' : 'none';
+      document.getElementById('tab-docs').style.display = (t === 'docs') ? '' : 'none';
+    });
+  });
+
+  function renderUnread() {
+    var b = document.getElementById('unread-badge');
+    b.textContent = unread + ' 条未读';
+    b.style.display = unread ? '' : 'none';
+  }
+
+  /* 公告 */
+  function renderAnnounce() {
+    API.fetchAnnouncements().then(function (res) {
+      var list = res.list;
+      unread = res.unread;
+      renderUnread();
+      var wrap = document.getElementById('announceWrap');
+      if (!list.length) { wrap.innerHTML = '<div class="empty">暂无公告</div>'; return; }
+      var html = '';
+      list.forEach(function (a) {
+        var status;
+        if (a.expired) status = '<span class="chip muted">已下线</span>';
+        else if (a.read) status = '<span class="chip muted">已读</span>';
+        else status = '<span class="chip danger">未读</span>';
+        html += '<div class="list-item" data-id="' + a.id + '">'
+          + (a.read ? '' : '<span class="dot danger"></span>')
+          + '<span class="grow"><span class="t">' + a.title + '</span></span>'
+          + '<span class="chip muted">' + a.range + '</span>'
+          + '<span class="num">' + a.pubDate + '</span>'
+          + status
+          + '</div>';
+      });
+      wrap.innerHTML = html;
+      wrap.querySelectorAll('.list-item').forEach(function (li) {
+        li.addEventListener('click', function () { openAnnounce(li.getAttribute('data-id')); });
+      });
+    });
+  }
+
+  function openAnnounce(id) {
+    API.fetchAnnouncements().then(function (res) {
+      var a = null;
+      res.list.forEach(function (x) { if (x.id === id) a = x; });
+      if (!a) return;
+      var bodyHtml = '<div style="font-size:12.5px;color:var(--text-sub);margin-bottom:14px">范围：<span class="chip muted">' + a.range + '</span>　发布日期：<span class="num">' + a.pubDate + '</span></div>'
+        + a.body.split('\n').filter(function (x) { return x.trim(); }).map(function (p) { return '<p style="margin:0 0 10px;line-height:1.9">' + p + '</p>'; }).join('');
+      UI.modal(a.title, bodyHtml);
+      if (!a.read && !a.expired) {
+        API.markRead(id).then(function () { renderAnnounce(); });
+      }
+    });
+  }
+
+  /* 文档目录 */
+  function renderTree() {
+    var tree = document.getElementById('docTree');
+    if (!docs.length) { tree.innerHTML = '<div class="empty">暂无文档</div>'; return; }
+    var html = '';
+    var isFirstCat = true;
+    CATS.forEach(function (cat) {
+      var catDocs = docs.filter(function (d) { return d.category === cat; });
+      if (!catDocs.length) return;
+      var open = isFirstCat;
+      html += '<div class="node" style="font-weight:600">'
+        + '<span class="caret' + (open ? ' open' : '') + '" data-icon="chevron-right"></span>'
+        + cat
+        + '</div>';
+      html += '<div class="trunk" style="' + (open ? 'max-height:none' : 'display:none') + '">';
+      catDocs.forEach(function (d) {
+        var sel = isFirstCat && !activeDocId ? ' style="background:#eef3ff;color:var(--primary);font-weight:600"' : (d.id === activeDocId ? ' style="background:#eef3ff;color:var(--primary);font-weight:600"' : '');
+        html += '<div class="node" data-id="' + d.id + '"' + sel + '>'
+          + '<span data-icon="file-text"></span>'
+          + '<span class="grow" style="flex:1"><span>' + d.title + '</span>'
+          + '<span style="display:block;font-size:11.5px;color:var(--text-faint)">' + d.author + ' · 更新 ' + d.updated + '</span></span></div>';
+      });
+      html += '</div>';
+      isFirstCat = false;
+    });
+    tree.innerHTML = html;
+
+    tree.querySelectorAll('.node').forEach(function (n) {
+      var caret = n.querySelector(':scope > .caret');
+      n.addEventListener('click', function (e) {
+        if (caret) {
+          e.stopPropagation();
+          var trunk = n.nextElementSibling;
+          var isOpen = trunk.style.display !== 'none';
+          if (isOpen) { trunk.style.display = 'none'; caret.classList.remove('open'); }
+          else { trunk.style.display = ''; trunk.style.maxHeight = 'none'; caret.classList.add('open'); }
+          return;
+        }
+        var id = n.getAttribute('data-id');
+        if (id) openDoc(id);
+      });
+    });
+    tree.querySelectorAll('.trunk').forEach(function (tr) {
+      if (tr.style.display !== 'none') tr.style.maxHeight = 'none';
+    });
+
+    var first = 'DOC-01';
+    if (docs.length) {
+      var f = docs[0];
+      if (f) openDoc(f.id);
+    }
+  }
+
+  /* 文档视图 */
+  function openDoc(id) {
+    activeDocId = id;
+    var view = document.getElementById('docView');
+    view.innerHTML = '<div class="skeleton"></div>';
+    API.fetchDoc(id).then(function (d) {
+      if (!d) { view.innerHTML = '<div class="empty">请选择左侧文档</div>'; return; }
+      var html = '<div class="reveal" style="font-family:var(--font-serif);font-size:20px;font-weight:600;margin-bottom:12px">' + d.title + '</div>'
+        + '<div style="display:flex;gap:10px;align-items:center;font-size:12.5px;color:var(--text-sub);padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:16px">'
+        + '<span class="chip info">' + d.category + '</span>'
+        + '<span>作者：' + d.author + '</span>'
+        + '<span>更新：<span class="num">' + d.updated + '</span></span>'
+        + '<span>浏览量：<span class="num">' + d.viewers + '</span></span>'
+        + '</div>';
+      d.content.forEach(function (p) { html += '<p style="margin:0 0 12px;line-height:1.9">' + p + '</p>'; });
+      html += '<div class="hint" style="margin-top:14px;font-size:12px;color:var(--text-faint)">按文档节点权限可见</div>';
+      view.innerHTML = html;
+      /* 高亮左侧选中 */
+      document.querySelectorAll('#docTree .node[data-id]').forEach(function (n) {
+        n.style.background = (n.getAttribute('data-id') === id) ? '#eef3ff' : '';
+        n.style.color = (n.getAttribute('data-id') === id) ? 'var(--primary)' : '';
+      });
+    });
+  }
+
+  function init() {
+    API.fetchAnnouncements().then(function (res) {
+      unread = res.unread;
+      renderUnread();
+    });
+    renderAnnounce();
+    API.fetchDocs().then(function (list) {
+      docs = list;
+      renderTree();
+    });
+  }
+  init();
+})();
+</script>
+</body>
+</html>

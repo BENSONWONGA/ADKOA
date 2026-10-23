@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>通讯录 · 协同办公系统</title>
+<link rel="stylesheet" href="assets/styles.css">
+<script src="assets/mock.js"></script>
+<script src="assets/api.js"></script>
+<script src="assets/ui.js"></script>
+</head>
+<body data-page="contacts">
+<aside class="app-nav">
+  <div class="brand">
+    <div class="brand-mark">OA</div>
+    <div class="brand-name">协同办公系统</div>
+  </div>
+  <nav class="nav-list">
+    <a class="nav-item" data-nav="home" href="index.html"><span data-icon="home"></span>工作台</a>
+    <a class="nav-item" data-nav="approval" href="approval.html"><span data-icon="file-check"></span>审批</a>
+    <a class="nav-item" data-nav="attendance" href="attendance.html"><span data-icon="clock"></span>考勤</a>
+    <a class="nav-item" data-nav="meeting" href="meeting.html"><span data-icon="calendar"></span>日程会议</a>
+    <a class="nav-item" data-nav="task" href="task.html"><span data-icon="list-checks"></span>任务协作</a>
+    <a class="nav-item" data-nav="knowledge" href="knowledge.html"><span data-icon="book-open"></span>公告知识库</a>
+    <a class="nav-item" data-nav="contacts" href="contacts.html"><span data-icon="users"></span>通讯录</a>
+  </nav>
+  <div class="nav-foot">
+    <div class="user-chip">
+      <div class="avatar" id="nav-avatar">张</div>
+      <div class="user-meta">
+        <div class="user-name" id="nav-name">张伟</div>
+        <div class="user-dept" id="nav-dept">市场部 · 市场经理</div>
+      </div>
+    </div>
+  </div>
+</aside>
+<main class="app-content">
+  <div class="bg-tint"></div>
+  <div class="page-head">
+    <div>
+      <h2>通讯录</h2>
+      <div class="sub">组织架构 · 成员信息 · 检索</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-b" style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+      <div style="position:relative;flex:1;min-width:220px;max-width:340px">
+        <span data-icon="search" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-faint);width:16px;height:16px;display:inline-flex"></span>
+        <input class="input" id="c-search" placeholder="搜索姓名/部门/职位" style="padding-left:34px">
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px" id="dept-chips">
+        <span class="chip info" data-dep="">全部</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-h">组织架构 <span class="link"></span></div>
+      <div class="card-b"><div class="tree" id="orgTree"><div class="skeleton"></div><div class="skeleton"></div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-h">成员 <span class="link"></span></div>
+      <div class="card-b"><div id="memberWrap"><div class="grid3"><div class="member-card"><div class="skeleton" style="width:40px;height:40px;border-radius:50%"></div><div><div class="skeleton" style="width:70px"></div><div class="skeleton" style="width:52px"></div></div></div></div></div></div>
+    </div>
+  </div>
+</main>
+<script src="assets/icons.js"></script>
+<script src="assets/nav-active.js"></script>
+<script>
+(function () {
+  var DB = window.DB;
+  var DEPTS = [];
+  var DEPT_COLORS = { '市场部': '#2f6fed', '产品部': '#7c3aed', '研发部': '#0891b2', '财务部': '#16a34a', '人力资源部': '#f59e0b', '行政部': '#64748b' };
+  var debounceTimer = null;
+
+  function colorOf(dept) { return DEPT_COLORS[dept] || '#64748b'; }
+
+  /* 部门 chips */
+  function renderChips() {
+    var box = document.getElementById('dept-chips');
+    var html = '<span class="chip info" data-dep="">全部</span>';
+    DEPTS.forEach(function (d) {
+      if (d.parent !== null) return;
+      html += '<span class="chip muted" data-dep="' + d.name + '">' + d.name + '</span>';
+    });
+    box.innerHTML = html;
+    box.querySelectorAll('[data-dep]').forEach(function (c) {
+      c.addEventListener('click', function () {
+        var dep = c.getAttribute('data-dep');
+        document.getElementById('c-search').value = dep === '' ? '' : dep;
+        activateChip(c);
+        runSearch(dep);
+      });
+    });
+  }
+
+  function activateChip(active) {
+    document.querySelectorAll('#dept-chips [data-dep]').forEach(function (c) {
+      var same = (c === active);
+      c.className = 'chip ' + (same ? 'info' : 'muted');
+    });
+  }
+
+  /* 组织架构树 */
+  function renderTree() {
+    var tree = document.getElementById('orgTree');
+    var root = '<div class="node root"><span class="caret open" data-icon="chevron-down"></span>XX 科技有限公司</div>';
+    var roots = DEPTS.filter(function (d) { return d.parent === null; });
+    var childrenOf = [];
+    DEPTS.forEach(function (d) {
+      if (d.parent !== null) childrenOf.push(d);
+    });
+    var html = root;
+    html += '<div class="trunk" style="max-height:none">';
+    roots.forEach(function (d) {
+      html += renderDeptNode(d, childrenOf);
+    });
+    html += '</div>';
+    tree.innerHTML = html;
+    tree.querySelectorAll('.node').forEach(function (n) {
+      n.addEventListener('click', function (e) {
+        var caret = n.querySelector('.caret');
+        if (caret && e.target.closest('.caret')) {
+          e.stopPropagation();
+          var trunk = n.nextElementSibling;
+          var isOpen = trunk && trunk.style.display !== 'none';
+          if (trunk && trunk.classList.contains('trunk')) {
+            if (isOpen) { trunk.style.display = 'none'; caret.classList.remove('open'); }
+            else { trunk.style.display = ''; trunk.style.maxHeight = 'none'; caret.classList.add('open'); }
+          }
+          return;
+        }
+        filterByDeptName(depNameOf(n));
+      });
+    });
+    tree.querySelectorAll('.trunk').forEach(function (tr) { if (tr.style.display !== 'none') tr.style.maxHeight = 'none'; });
+  }
+
+  function depNameOf(node) {
+    var last = node.getAttribute('data-dep');
+    return last || '';
+  }
+
+  function renderDeptNode(d, childrenOf) {
+    var kids = childrenOf.filter(function (c) { return c.parent === d.id; });
+    var hasKids = kids.length > 0;
+    var html = '<div class="node" data-dep="' + d.name + '" style="font-weight:600">'
+      + (hasKids ? '<span class="caret open" data-icon="chevron-down"></span>' : '<span class="caret" data-icon="chevron-right"></span>')
+      + '<span data-icon="building"></span>'
+      + '<span class="grow" style="flex:1">' + d.name
+        + (d.leader ? '<span style="display:block;font-size:11.5px;color:var(--text-faint);font-weight:400">负责人 ' + d.leader + '</span>' : '')
+      + '</span></div>';
+    if (hasKids) {
+      html += '<div class="trunk" style="max-height:none">';
+      kids.forEach(function (k) { html += renderDeptNode(k, childrenOf); });
+      html += '</div>';
+    }
+    return html;
+  }
+
+  /* 成员渲染 */
+  function renderMembers(users) {
+    var wrap = document.getElementById('memberWrap');
+    if (!users.length) {
+      wrap.innerHTML = '<div class="empty">未找到匹配成员</div>';
+      return;
+    }
+    var html = '<div class="grid3" style="margin:0">';
+    users.forEach(function (u) {
+      html += '<div class="member-card" data-id="' + u.id + '">'
+        + '<div class="avatar" style="background:' + colorOf(u.dept) + '">' + u.name.charAt(0) + '</div>'
+        + '<div style="min-width:0">'
+          + '<div style="font-weight:600">' + u.name + '</div>'
+          + '<div style="font-size:12px;color:var(--text-sub)">' + u.pos + '</div>'
+          + '<div style="font-size:12px;color:var(--text-faint)">' + u.dept + ' · ' + u.email + '</div>'
+          + '<div style="font-size:12px;color:var(--text-faint)">手机 <span class="num">' + u.phone + '</span></div>'
+        + '</div></div>';
+    });
+    html += '</div>';
+    wrap.innerHTML = html;
+    wrap.querySelectorAll('.member-card').forEach(function (c) {
+      c.addEventListener('click', function () { openMember(c.getAttribute('data-id'), users); });
+    });
+  }
+
+  function openMember(id, users) {
+    var u = null;
+    users.forEach(function (x) { if (x.id === Number(id)) u = x; });
+    if (!u) return;
+    var body = '<div style="display:flex;gap:16px;align-items:center;margin-bottom:18px">'
+      + '<div class="avatar" style="width:56px;height:56px;font-size:22px;background:' + colorOf(u.dept) + '">' + u.name.charAt(0) + '</div>'
+      + '<div><div style="font-size:18px;font-weight:700">' + u.name + '</div><div style="color:var(--text-sub);font-size:13px">' + u.pos + '</div></div></div>';
+    body += '<div style="display:flex;flex-direction:column;gap:10px;font-size:13.5px">'
+      + '<div style="display:flex"><span style="width:90px;color:var(--text-sub)">部门</span>' + u.dept + '</div>'
+      + '<div style="display:flex"><span style="width:90px;color:var(--text-sub)">职位</span>' + u.pos + '</div>'
+      + '<div style="display:flex"><span style="width:90px;color:var(--text-sub)">直属上级</span>' + (u.leader || '—') + '</div>'
+      + '<div style="display:flex"><span style="width:90px;color:var(--text-sub)">邮箱</span>' + u.email + '</div>'
+      + '<div style="display:flex"><span style="width:90px;color:var(--text-sub)">手机</span><span class="num">' + u.phone + '</span></div>'
+      + '<div style="display:flex"><span style="width:90px;color:var(--text-sub)">城市</span>' + u.city + '</div>'
+      + '</div>'
+      + '<div class="hint" style="margin-top:16px;font-size:12px;color:var(--text-faint)">完整联系方式需管理员授权可见（手机号默认掩码）</div>';
+    UI.modal(u.name, body);
+  }
+
+  function runSearch(kw) {
+    API.searchContacts(kw).then(function (res) {
+      renderMembers(res.users);
+    });
+  }
+
+  function filterByDeptName(name) {
+    var input = document.getElementById('c-search');
+    var kw = name || '';
+    input.value = kw;
+    document.querySelectorAll('#dept-chips [data-dep]').forEach(function (c) {
+      var active = (c.getAttribute('data-dep') === kw);
+      c.className = 'chip ' + (active ? 'info' : 'muted');
+    });
+    runSearch(kw);
+  }
+
+  function init() {
+    API.searchContacts('').then(function (res) {
+      DEPTS = res.depts;
+      renderChips();
+      renderTree();
+      renderMembers(res.users);
+    });
+    /* 防抖搜索 */
+    document.getElementById('c-search').addEventListener('input', function () {
+      clearTimeout(debounceTimer);
+      var v = this.value;
+      debounceTimer = setTimeout(function () {
+        document.querySelectorAll('#dept-chips [data-dep]').forEach(function (c) {
+          c.className = 'chip ' + (c.getAttribute('data-dep') === v ? 'info' : 'muted');
+        });
+        runSearch(v);
+      }, 300);
+    });
+  }
+  init();
+})();
+</script>
+</body>
+</html>

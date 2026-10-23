@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>日程会议 · 协同办公系统</title>
+<link rel="stylesheet" href="assets/styles.css">
+<script src="assets/mock.js"></script>
+<script src="assets/api.js"></script>
+<script src="assets/ui.js"></script>
+</head>
+<body data-page="meeting">
+<aside class="app-nav">
+  <div class="brand">
+    <div class="brand-mark">OA</div>
+    <div class="brand-name">协同办公系统</div>
+  </div>
+  <nav class="nav-list">
+    <a class="nav-item" data-nav="home" href="index.html"><span data-icon="home"></span>工作台</a>
+    <a class="nav-item" data-nav="approval" href="approval.html"><span data-icon="file-check"></span>审批</a>
+    <a class="nav-item" data-nav="attendance" href="attendance.html"><span data-icon="clock"></span>考勤</a>
+    <a class="nav-item" data-nav="meeting" href="meeting.html"><span data-icon="calendar"></span>日程会议</a>
+    <a class="nav-item" data-nav="task" href="task.html"><span data-icon="list-checks"></span>任务协作</a>
+    <a class="nav-item" data-nav="knowledge" href="knowledge.html"><span data-icon="book-open"></span>公告知识库</a>
+    <a class="nav-item" data-nav="contacts" href="contacts.html"><span data-icon="users"></span>通讯录</a>
+  </nav>
+  <div class="nav-foot">
+    <div class="user-chip">
+      <div class="avatar" id="nav-avatar">张</div>
+      <div class="user-meta">
+        <div class="user-name" id="nav-name">张伟</div>
+        <div class="user-dept" id="nav-dept">市场部 · 市场经理</div>
+      </div>
+    </div>
+  </div>
+</aside>
+<main class="app-content">
+  <div class="bg-tint"></div>
+
+  <div class="page-head">
+    <div>
+      <h2>日程会议</h2>
+      <div class="sub">会议室预定（冲突检测）· 我的会议 · 今日日程</div>
+    </div>
+  </div>
+
+  <div class="tabs" id="meet-tabs">
+    <button type="button" class="tab active" data-tab="book">会议室预定</button>
+    <button type="button" class="tab" data-tab="mine">我的会议</button>
+    <button type="button" class="tab" data-tab="today">今日日程</button>
+  </div>
+
+  <!-- Tab 1：会议室预定 -->
+  <div class="panel" id="pn-book">
+    <div class="grid2">
+      <div class="card reveal" style="animation-delay:.05s">
+        <div class="card-h">预定会议室</div>
+        <div class="card-b">
+          <div class="form-grid">
+            <div class="field">
+              <label>日期</label>
+              <input type="date" class="input" id="bk-date" value="2026-10-26">
+            </div>
+            <div class="field">
+              <label>会议室</label>
+              <select class="select" id="bk-room">
+                <option value="R-A">A 会议室</option>
+                <option value="R-B">B 会议室</option>
+                <option value="R-C">C 洽谈室</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>开始时间</label>
+              <select class="select" id="bk-start">
+                <option value="9">09:00</option>
+                <option value="10">10:00</option>
+                <option value="11">11:00</option>
+                <option value="12">12:00</option>
+                <option value="13">13:00</option>
+                <option value="14">14:00</option>
+                <option value="15">15:00</option>
+                <option value="16">16:00</option>
+                <option value="17">17:00</option>
+                <option value="18">18:00</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>时长</label>
+              <select class="select" id="bk-len">
+                <option value="1">1 小时</option>
+                <option value="2">2 小时</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>主题</label>
+            <input type="text" class="input" id="bk-title" placeholder="请输入会议主题（必填）">
+            <div class="error" style="display:block;color:var(--danger);font-size:12px;margin-top:4px;display:none" id="bk-title-err">主题不能为空</div>
+          </div>
+          <div id="bk-msg" style="margin-bottom:12px"></div>
+          <button class="btn btn-primary" id="bk-submit"><span data-icon="check"></span>预定</button>
+        </div>
+      </div>
+
+      <div class="card reveal" style="animation-delay:.1s">
+        <div class="card-h">当日占用 <span class="link num" id="occ-date"></span></div>
+        <div class="card-b" id="occ-list">
+          <div class="skeleton"></div>
+          <div class="skeleton"></div>
+          <div class="skeleton"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 2：我的会议 -->
+  <div class="panel" id="pn-mine" style="display:none">
+    <div class="card reveal" style="animation-delay:.05s">
+      <div class="card-h">我的会议</div>
+      <div class="card-b" id="mine-list">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 3：今日日程 -->
+  <div class="panel" id="pn-today" style="display:none">
+    <div class="grid2">
+      <div class="card reveal" style="animation-delay:.05s">
+        <div class="card-h">新建日程</div>
+        <div class="card-b">
+          <div class="field">
+            <label>标题</label>
+            <input type="text" class="input" id="sc-title" placeholder="请输入日程标题（必填）">
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label>时间</label>
+              <input type="time" class="input" id="sc-time" value="09:30">
+            </div>
+            <div class="field">
+              <label>时长</label>
+              <select class="select" id="sc-duration">
+                <option value="20 分钟">20 分钟</option>
+                <option value="30 分钟">30 分钟</option>
+                <option value="60 分钟">60 分钟</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>类型</label>
+            <select class="select" id="sc-type">
+              <option value="例行">例行</option>
+              <option value="约定">约定</option>
+              <option value="会议">会议</option>
+              <option value="待办">待办</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" id="sc-submit"><span data-icon="plus"></span>添加</button>
+        </div>
+      </div>
+
+      <div class="card reveal" style="animation-delay:.1s">
+        <div class="card-h">今日日程列表</div>
+        <div class="card-b" id="sched-list">
+          <div class="skeleton"></div>
+          <div class="skeleton"></div>
+          <div class="skeleton"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+(function () {
+  var roomMap = { 'R-A': 'A 会议室', 'R-B': 'B 会议室', 'R-C': 'C 洽谈室' };
+
+  function fmtRange(s, len) {
+    return String(s).padStart(2, '0') + ':00-' + String(s + len).padStart(2, '0') + ':00';
+  }
+  function dateLabel(d) { return d || '—'; }
+
+  /* ===== 会议室预定 ===== */
+  var bkDate = document.getElementById('bk-date');
+  document.getElementById('occ-date').textContent = dateLabel(bkDate.value);
+
+  function loadOccupancy() {
+    var el = document.getElementById('occ-list');
+    var box = document.getElementById('occ-date');
+    var date = bkDate.value;
+    box.textContent = dateLabel(date);
+    el.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>';
+    API.fetchBookings(date).then(function (data) {
+      document.getElementById('occ-date').textContent = dateLabel(data.date);
+      var list = data.list.slice().sort(function (a, b) { return a.start - b.start; });
+      if (!list.length) { el.innerHTML = '<div class="empty">当日暂无占用</div>'; return; }
+      el.innerHTML = '<div class="timeline">' + list.map(function (b) {
+        return '<div class="tl-item ok"><div class="tl-title">' + b.title + '</div>' +
+          '<div class="tl-time">' + fmtRange(b.start, b.len) + ' · ' + (roomMap[b.room] || b.room) + '</div>' +
+          '<div>主持人：' + b.host + '</div></div>';
+      }).join('') + '</div>';
+    });
+  }
+
+  bkDate.addEventListener('change', function () {
+    document.getElementById('bk-msg').innerHTML = '';
+    loadOccupancy();
+  });
+
+  document.getElementById('bk-submit').addEventListener('click', function () {
+    var btn = this;
+    var title = document.getElementById('bk-title').value.trim();
+    if (!title) {
+      document.getElementById('bk-title-err').style.display = 'block';
+      return;
+    }
+    document.getElementById('bk-title-err').style.display = 'none';
+    btn.disabled = true;
+    API.bookRoom({
+      room: document.getElementById('bk-room').value,
+      date: bkDate.value,
+      start: parseInt(document.getElementById('bk-start').value, 10),
+      len: parseInt(document.getElementById('bk-len').value, 10),
+      title: title
+    }).then(function (r) {
+      var msg = document.getElementById('bk-msg');
+      if (!r.ok) {
+        msg.innerHTML = '<span class="chip danger">冲突：该时段已被占用，仅可并存或改时段</span>';
+        UI.toast('预定失败：' + r.msg, 'warn');
+      } else {
+        msg.innerHTML = '';
+        UI.toast('预定成功', 'ok');
+        document.getElementById('bk-title').value = '';
+      }
+      loadOccupancy();
+      btn.disabled = false;
+    }).catch(function () { btn.disabled = false; });
+  });
+
+  /* ===== 我的会议 ===== */
+  function loadMine() {
+    var el = document.getElementById('mine-list');
+    el.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
+    API.fetchMeetings().then(function (data) {
+      var list = data.meetings;
+      if (!list.length) { el.innerHTML = '<div class="empty">暂无会议</div>'; return; }
+      el.innerHTML = '<div style="margin:0 -12px">' + list.map(function (m) {
+        var att = m.attendees.map(function (a) { return '<span class="chip muted">' + a + '</span>'; }).join('');
+        var minutes = (m.status === '已结束' && m.minutes) ? '<div class="hint" style="margin-top:6px">纪要已上传</div>' : '';
+        return '<div class="list-item" data-mid="' + m.id + '" style="cursor:pointer;padding:12px">' +
+          '<div class="grow"><div style="font-weight:600">' + m.title + '</div>' +
+          '<div class="hint" style="margin-top:2px">' + m.room + ' · ' + m.time + ' · 主持人 ' + m.host + '</div>' +
+          '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' + att + '</div>' + minutes +
+          '</div>' +
+          '<span class="chip ' + (m.status === '已结束' ? 'muted' : 'info') + '">' + m.status + '</span></div>';
+      }).join('') + '</div>';
+
+      el.querySelectorAll('.list-item').forEach(function (card) {
+        card.addEventListener('click', function () {
+          var id = card.getAttribute('data-mid');
+          var m = null;
+          list.forEach(function (it) { if (it.id === id) m = it; });
+          if (!m) return;
+          var body =
+            '<div class="field"><label>会议主题</label><div>' + m.title + '</div></div>' +
+            '<div class="field"><label>会议室</label><div>' + m.room + '</div></div>' +
+            '<div class="field"><label>时间</label><div>' + m.time + '</div></div>' +
+            '<div class="field"><label>主持人</label><div>' + m.host + '</div></div>' +
+            '<div class="field"><label>参会人</label><div style="display:flex;gap:6px;flex-wrap:wrap">' + m.attendees.map(function (a) { return '<span class="chip muted">' + a + '</span>'; }).join('') + '</div></div>' +
+            '<div class="field"><label>状态</label><div><span class="chip ' + (m.status === '已结束' ? 'muted' : 'info') + '">' + m.status + '</span></div></div>' +
+            '<div class="field"><label>纪要</label><div class="hint">' + (m.minutes ? m.minutes : '会议纪要稍后上传') + '</div></div>';
+          UI.modal(m.title, body);
+        });
+      });
+    });
+  }
+
+  /* ===== 今日日程 ===== */
+  function loadToday() {
+    var el = document.getElementById('sched-list');
+    el.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
+    API.fetchMeetings().then(function (data) {
+      var list = data.schedules;
+      if (!list.length) { el.innerHTML = '<div class="empty">今日暂无日程</div>'; return; }
+      el.innerHTML = list.map(function (s) {
+        return '<div class="list-item ' + (s.done ? 'done' : '') + '">' +
+          '<span class="num">' + s.time + '</span>' +
+          '<div class="grow"><span class="t">' + s.title + '</span> <span class="hint">' + s.duration + '</span></div>' +
+          '<span class="chip info">' + s.type + '</span></div>';
+      }).join('');
+    });
+  }
+
+  document.getElementById('sc-submit').addEventListener('click', function () {
+    var btn = this;
+    var title = document.getElementById('sc-title').value.trim();
+    if (!title) { UI.toast('请填写日程标题', 'warn'); return; }
+    btn.disabled = true;
+    API.addSchedule({
+      title: title,
+      time: document.getElementById('sc-time').value || '09:30',
+      duration: document.getElementById('sc-duration').value,
+      type: document.getElementById('sc-type').value
+    }).then(function () {
+      UI.toast('日程已添加，将在开始前 15 分钟提醒', 'ok');
+      document.getElementById('sc-title').value = '';
+      loadToday();
+      btn.disabled = false;
+    }).catch(function () { btn.disabled = false; });
+  });
+
+  /* ===== Tab 切换 ===== */
+  function switchTab(name) {
+    var tabs = document.querySelectorAll('#meet-tabs .tab');
+    tabs.forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === name); });
+    ['pn-book', 'pn-mine', 'pn-today'].forEach(function (id) {
+      var p = document.getElementById(id);
+      p.style.display = (id === 'pn-' + name) ? '' : 'none';
+    });
+    if (name === 'book') loadOccupancy();
+    else if (name === 'mine') loadMine();
+    else loadToday();
+  }
+
+  document.querySelectorAll('#meet-tabs .tab').forEach(function (t) {
+    t.addEventListener('click', function () { switchTab(this.getAttribute('data-tab')); });
+  });
+
+  /* 初始展示第一个 tab */
+  loadOccupancy();
+})();
+</script>
+<script src="assets/icons.js"></script>
+<script src="assets/nav-active.js"></script>
+</body>
+</html>
