@@ -1,0 +1,225 @@
+{
+  "users": [
+    {
+      "id": "c6ab0d551c969863",
+      "name": "张伟",
+      "color": "#4f7cff",
+      "createdAt": 1793513536235
+    },
+    {
+      "id": "84e43a7be3278db9",
+      "name": "李娜",
+      "color": "#f2994a",
+      "createdAt": 1793513536235
+    },
+    {
+      "id": "a60e24e64e9de62f",
+      "name": "王强",
+      "color": "#27ae60",
+      "createdAt": 1793513536235
+    }
+  ],
+  "nodes": {
+    "5041bdaf0fcd4cd2": {
+      "id": "5041bdaf0fcd4cd2",
+      "name": "我的网盘",
+      "type": "folder",
+      "parentId": null,
+      "ownerId": null,
+      "createdAt": 1793513536235,
+      "updatedAt": 1793513536235
+    },
+    "99c15d1b9e49a882": {
+      "id": "99c15d1b9e49a882",
+      "name": "产品文档",
+      "type": "folder",
+      "parentId": "5041bdaf0fcd4cd2",
+      "ownerId": "c6ab0d551c969863",
+      "createdAt": 1793513536236,
+      "updatedAt": 1793513536236
+    },
+    "659136b7809270fc": {
+      "id": "659136b7809270fc",
+      "name": "需求说明书.docx",
+      "ext": "docx",
+      "type": "file",
+      "parentId": "99c15d1b9e49a882",
+      "storageName": "32e936619b221d25.docx",
+      "size": 52,
+      "ownerId": "c6ab0d551c969863",
+      "createdAt": 1793513536236,
+      "updatedAt": 1793513536236,
+      "ooKey": "f3b1975f815abc2fb9417db9"
+    },
+    "f5e42238685c9a1e": {
+      "id": "f5e42238685c9a1e",
+      "name": "季度预算表.xlsx",
+      "ext": "xlsx",
+      "type": "file",
+      "parentId": "99c15d1b9e49a882",
+      "storageName": "61c7cf4e8e7b7225.xlsx",
+      "size": 52,
+      "ownerId": "c6ab0d551c969863",
+      "createdAt": 1793513536236,
+      "updatedAt": 1793513536236,
+      "ooKey": "c997363122ee7f086c1bf014"
+    },
+    "2a3bfcabd05d1526": {
+      "id": "2a3bfcabd05d1526",
+      "name": "项目路演.pptx",
+      "ext": "pptx",
+      "type": "file",
+      "parentId": "99c15d1b9e49a882",
+      "storageName": "cbef82be117ab42a.pptx",
+      "size": 52,
+      "ownerId": "c6ab0d551c969863",
+      "createdAt": 1793513536237,
+      "updatedAt": 1793513536237,
+      "ooKey": "6430c48c637cde952dca3e8d"
+    },
+    "2828870c4f5c39f1": {
+      "id": "2828870c4f5c39f1",
+      "name": "测试文件夹",
+      "type": "folder",
+      "parentId": "5041bdaf0fcd4cd2",
+      "ownerId": "c6ab0d551c969863",
+      "createdAt": 1793513562622,
+      "updatedAt": 1793513562622
+    },
+    "326093b047559405": {
+      "id": "326093b047559405",
+      "name": "改名.txt",
+      "ext": "txt",
+      "type": "file",
+      "parentId": "5041bdaf0fcd4cd2",
+      "storageName": "9184b0855c3a18a6.txt",
+      "size": 13,
+      "ownerId": "c6ab0d551c969863",
+      "createdAt": 1793513562687,
+      "updatedAt": 1793513573609,
+      "ooKey": "3021243ca89b2a121b9f246b"
+    },
+    "e7ebaa668bafb375": {
+      "id": "e7ebaa668bafb375",
+      "name": "UI测试",
+      "type": "folder",
+      "parentId": "99c15d1b9e49a882",
+      "ownerId": "c6ab0d551c969863",
+      "createdAt": 1793513633849,
+      "updatedAt": 1793513633849
+    }
+  },
+  "shares": [
+    {
+      "id": "5443cfef6f5f0b57",
+      "nodeId": "f5e42238685c9a1e",
+      "token": "0e300fb273827806de6d",
+      "mode": "view",
+      "createdBy": "c6ab0d551c969863",
+      "createdAt": 1793513673666,
+      "expiresAt": null
+    },
+    {
+      "id": "7ce11c7077c95270",
+      "nodeId": "326093b047559405",
+      "token": "08bc02ec0012fe446951",
+      "mode": "view",
+      "createdBy": "c6ab0d551c969863",
+      "createdAt": 1793513562870,
+      "expiresAt": null
+    }
+  ],
+  "activities": [
+    {
+      "id": "f0d0bf873c7d3977",
+      "nodeId": "f5e42238685c9a1e",
+      "userId": "c6ab0d551c969863",
+      "action": "share",
+      "detail": "创建了只读分享链接",
+      "ts": 1793513673666
+    },
+    {
+      "id": "6ce5ecf4f154c9bd",
+      "nodeId": "e7ebaa668bafb375",
+      "userId": "c6ab0d551c969863",
+      "action": "mkdir",
+      "detail": "创建了文件夹「UI测试」",
+      "ts": 1793513633849
+    },
+    {
+      "id": "14f0db6543a5a161",
+      "nodeId": "326093b047559405",
+      "userId": null,
+      "action": "saved",
+      "detail": "张伟 保存了新版本",
+      "ts": 1793513573609
+    },
+    {
+      "id": "ad54aca2a3a90dc3",
+      "nodeId": "326093b047559405",
+      "userId": "c6ab0d551c969863",
+      "action": "share",
+      "detail": "创建了只读分享链接",
+      "ts": 1793513562870
+    },
+    {
+      "id": "030926aac67f1d9e",
+      "nodeId": "326093b047559405",
+      "userId": "c6ab0d551c969863",
+      "action": "rename",
+      "detail": "将「demo.txt」重命名为「改名.txt」",
+      "ts": 1793513562847
+    },
+    {
+      "id": "72931ac646de16d2",
+      "nodeId": "326093b047559405",
+      "userId": "c6ab0d551c969863",
+      "action": "upload",
+      "detail": "上传了「demo.txt」",
+      "ts": 1793513562687
+    },
+    {
+      "id": "fb5e198a4b01bb63",
+      "nodeId": "2828870c4f5c39f1",
+      "userId": "c6ab0d551c969863",
+      "action": "mkdir",
+      "detail": "创建了文件夹「测试文件夹」",
+      "ts": 1793513562622
+    },
+    {
+      "id": "e9b2a899055e3e4d",
+      "nodeId": "99c15d1b9e49a882",
+      "userId": "c6ab0d551c969863",
+      "action": "mkdir",
+      "detail": "创建了文件夹「产品文档」",
+      "ts": 1793513536237
+    },
+    {
+      "id": "37137961034dafd2",
+      "nodeId": "2a3bfcabd05d1526",
+      "userId": "c6ab0d551c969863",
+      "action": "upload",
+      "detail": "上传了「项目路演.pptx」",
+      "ts": 1793513536237
+    },
+    {
+      "id": "a89ebac15cf34ea3",
+      "nodeId": "f5e42238685c9a1e",
+      "userId": "c6ab0d551c969863",
+      "action": "upload",
+      "detail": "上传了「季度预算表.xlsx」",
+      "ts": 1793513536236
+    },
+    {
+      "id": "ff6d29626e863476",
+      "nodeId": "659136b7809270fc",
+      "userId": "c6ab0d551c969863",
+      "action": "upload",
+      "detail": "上传了「需求说明书.docx」",
+      "ts": 1793513536236
+    }
+  ],
+  "meta": {
+    "rootId": "5041bdaf0fcd4cd2"
+  }
+}
